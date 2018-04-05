@@ -2,17 +2,16 @@
 
 # TODO add comments
 
-import grequests
 
-import calendar
-import datetime
+
+
 
 import geojson
-import json
+
 
 from shapely.geometry import shape
 
-import geopandas as gpd
+import geopandas as gdf
 import pandas as pd
 
 from geopandas import GeoDataFrame
@@ -36,110 +35,113 @@ from bokeh.plotting import ColumnDataSource
 from bokeh.plotting import figure
 from bokeh.tile_providers import STAMEN_TERRAIN_RETINA
 
-def get_month_start_end_date(year, month):
-    first_month_day = datetime.date(year, month, 1)
-    last_month_day = first_month_day.replace(day = calendar.monthrange(first_month_day.year, first_month_day.month)[1])
-    return (first_month_day, last_month_day)
+
+from core.time_helper import get_month_start_end_date_from_period
+from core.requests_helper import RequestsData
 
 
-def get_month_start_end_date_from_period(start_year, end_year):
+def fix_coords_point(features):
+    for num, value in enumerate(features):
 
-    dates_list = []
+        if (not isinstance(value['geometry']['coordinates'][0], (int, float))
+                or not isinstance(value['geometry']['coordinates'][1], (int, float))
+        ):
+            del features[num]
 
-    year_range = end_year - start_year + 1
-    current_year = start_year
+        elif len(value['geometry']['coordinates']) == 3:
+            if not isinstance(value['geometry']['coordinates'][-1], (int, float)):
+                features[num]['geometry']['coordinates'] = [
+                    value['geometry']['coordinates'][0],
+                    value['geometry']['coordinates'][1],
+                    float(0)
+                ]
+    return features
 
-    while current_year <= end_year:
-        dates_list.extend([
-            get_month_start_end_date(current_year, month_nb)
-            for month_nb in range(1, 13)
-            if datetime.datetime(current_year, month_nb, 1) <= datetime.datetime.now()  
-        ])
-        current_year += 1
+START_DATE = 1950
+END_DATE = 2018
+URL = "https://earthquake.usgs.gov/fdsnws/event/1/query?format=geojson&starttime=%s&endtime=%s"
 
-    return dates_list
+dates_to_requests = get_month_start_end_date_from_period(START_DATE, END_DATE)
 
 
-dates_to_requests = get_month_start_end_date_from_period(2017, 2018)
-
-earthquake_gdfs = []
-
+output_earthquakes_gdfs = []
 for start_date, end_date in dates_to_requests:
-# for data in requests_data:
-    
-    results = grequests.get("https://earthquake.usgs.gov/fdsnws/event/1/query?format=geojson&starttime=%s&endtime=%s" % (
-        start_date.strftime("%Y-%m-%d"),
-        end_date.strftime("%Y-%m-%d")
-    ))
-    
-    requests_data = grequests.imap([results])
-    requests_data = [f for f in requests_data][0]
-    earthquakes =  gpd.GeoDataFrame.from_features(
-        geojson.loads(
-            json.dumps(requests_data.json())
-        )['features']
-    )
-    earthquakes = earthquakes.loc[earthquakes.alert != None]
-    earthquakes = earthquakes[['geometry', 'mag', 'type']]
-    earthquakes['year'] = int(start_date.strftime("%Y-%m-%d").split('-')[0])
-    earthquake_gdfs.append(earthquakes.head(100))
 
-earthquake_gdf = pd.concat(earthquake_gdfs)
-earthquake_gdf.crs = {'init' :'epsg:4326'}
-earthquake_gdf = earthquake_gdf.to_crs({'init': 'epsg:3857'})
-earthquake_gdf['x'] = earthquake_gdf.geometry.apply(lambda geom: geom.x)
-earthquake_gdf['y'] = earthquake_gdf.geometry.apply(lambda geom: geom.y)
-earthquake_gdf = earthquake_gdf[['x', 'y', 'mag', 'year']]
+    url = URL % (start_date, end_date)
+    output_data = RequestsData([url]).run()
 
-earthquake_gdf_dict_by_year = {}
-years = list(set(earthquake_gdf['year'].values))
-for year in years:
-    earthquake_gdf_dict_by_year[year] = earthquake_gdf.loc[earthquake_gdf.year == year].copy().to_dict('series')
+    if 'features' in output_data:
 
-# earthquake_bokeh = ColumnDataSource(data=earthquake_gdf_dict_by_year[years[0]])
-earthquake_bokeh = ColumnDataSource(data=dict(x=[], y=[], mag=[], year=[]))
+        try:
+            earthquake_gdf = gdf.GeoDataFrame.from_features(
+                output_data['features']
+            )
+        except:
+            output_data_features = fix_coords_point(output_data['features'])
+            earthquake_gdf = gdf.GeoDataFrame.from_features(
+                output_data_features
+            )
 
-source = earthquake_bokeh
-# source = ColumnDataSource(pd.DataFrame(columns=['x','y','type','mag','year']))
+        earthquake_gdf.crs = {'init': 'epsg:4326'}
+        earthquake_gdf['year'] = int(start_date.year)
+        earthquake_gdf['month'] = int(start_date.month)
+        earthquake_gdf = earthquake_gdf[['geometry', 'mag', 'type', 'year', 'month']]
+        earthquake_gdf.to_csv('output.csv')
 
+        output_earthquakes_gdfs.append(
+            earthquake_gdf
+        )
+        print '-> %s to %s proceed! (%s found)' % (start_date, end_date, len(earthquake_gdf))
 
-# display data
-TOOLS = "pan,wheel_zoom,box_zoom,reset,save"
-plot = figure(title="Shake me !", tools=TOOLS, 
-           plot_width=600, plot_height=400, active_scroll = "wheel_zoom", output_backend="webgl")
+    else:
+        print '-> %s to %s NO DATA FOUND!' % (start_date, end_date)
 
-label = Label(x=1.1, y=18, text=str(years[0]), text_font_size='70pt', text_color='#eeeeee')
-plot.add_layout(label)
-
-plot.add_tile(STAMEN_TERRAIN_RETINA)
-
-color_mapper = LinearColorMapper(palette='Magma256', low=min(earthquake_gdf['mag']), high=max(earthquake_gdf['mag']))
-plot.circle(
-    x='x',
-    y='y',
-    source=source,
-    size=10,
-    color={'field': 'mag', 'transform': color_mapper},
-    alpha=0.5,
-    legend="earthquake"
-)
-
-# Add the slider
-
-slider = Slider(start=years[0], end=years[-1], value=years[0], step=1, title="Year")
-def slider_update(attrname, old, new):
-    year = slider.value
-    df = earthquake_gdf_dict_by_year[year]
-    label.text = str(year)
-    earthquake_bokeh.data = dict(
-        x=df['x'].tolist(),
-        y=df['y'].tolist(),
-        mag=df['mag'].tolist(),
-        year=df['year'].tolist()
-    )
-slider.on_change('value', slider_update)
-
-layout = row(plot, slider)
-
-curdoc().add_root(layout)
-curdoc().title = "Thomas est un trou du cul"
+output_earthquakes = pd.concat(output_earthquakes_gdfs).reset_index()
+output_earthquakes.to_file('earthquakes.gpkg', driver="GPKG")
+# # earthquake_bokeh = ColumnDataSource(data=earthquake_gdf_dict_by_year[years[0]])
+# earthquake_bokeh = ColumnDataSource(data=dict(x=[], y=[], mag=[], year=[]))
+#
+# source = earthquake_bokeh
+# # source = ColumnDataSource(pd.DataFrame(columns=['x','y','type','mag','year']))
+#
+#
+# # display data
+# TOOLS = "pan,wheel_zoom,box_zoom,reset,save"
+# plot = figure(title="Shake me !", tools=TOOLS,
+#            plot_width=600, plot_height=400, active_scroll = "wheel_zoom", output_backend="webgl")
+#
+# label = Label(x=1.1, y=18, text=str(years[0]), text_font_size='70pt', text_color='#eeeeee')
+# plot.add_layout(label)
+#
+# plot.add_tile(STAMEN_TERRAIN_RETINA)
+#
+# color_mapper = LinearColorMapper(palette='Magma256', low=min(earthquake_gdf['mag']), high=max(earthquake_gdf['mag']))
+# plot.circle(
+#     x='x',
+#     y='y',
+#     source=source,
+#     size=10,
+#     color={'field': 'mag', 'transform': color_mapper},
+#     alpha=0.5,
+#     legend="earthquake"
+# )
+#
+# # Add the slider
+#
+# slider = Slider(start=years[0], end=years[-1], value=years[0], step=1, title="Year")
+# def slider_update(attrname, old, new):
+#     year = slider.value
+#     df = earthquake_gdf_dict_by_year[year]
+#     label.text = str(year)
+#     earthquake_bokeh.data = dict(
+#         x=df['x'].tolist(),
+#         y=df['y'].tolist(),
+#         mag=df['mag'].tolist(),
+#         year=df['year'].tolist()
+#     )
+# slider.on_change('value', slider_update)
+#
+# layout = row(plot, slider)
+#
+# curdoc().add_root(layout)
+# curdoc().title = "Thomas est un trou du cul"
