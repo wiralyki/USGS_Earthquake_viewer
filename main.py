@@ -38,7 +38,8 @@ from bokeh.tile_providers import STAMEN_TERRAIN_RETINA
 
 from core.time_helper import get_month_start_end_date_from_period
 from core.requests_helper import RequestsData
-
+import os
+from threading import Thread
 
 def fix_coords_point(features):
     for num, value in enumerate(features):
@@ -57,47 +58,132 @@ def fix_coords_point(features):
                 ]
     return features
 
+class ImportEarthquakeData(Thread):
+
+    def __init__(self, template_url, start_date, end_date, to_csv=True):
+        Thread.__init__(self)
+        self._CRS = {'init': 'epsg:4326'}
+        self._OUTPUT_COLUMNS = ['geometry', 'mag', 'type', 'year', 'month']
+
+        self._template_url = template_url
+        self._start_date = start_date
+        self._end_date = end_date
+        self._to_csv = to_csv
+
+        # output
+        self._output_csv_name = 'data\earthquake_%s.csv'
+        self._output_earthquakes_gdfs = []
+
+    def run(self):
+        if not self._to_csv:
+            print 'Warning: Process may crash (memory limit)'
+
+        self._get_dates_to_request()
+        self._format_data()
+
+    def _get_dates_to_request(self):
+
+        self._dates_to_request = get_month_start_end_date_from_period(
+            self._start_date,
+            self._end_date
+        )
+
+    def _request_data(self, start_date, end_date):
+
+        self._start_year = start_date.year
+        url = self._template_url % (start_date, end_date)
+        data_requested = RequestsData([url]).run()
+
+        return data_requested
+
+    def _write_data(self):
+
+        header = False
+        output_csv_file = self._output_csv_name % self._start_year
+        if not os.path.isfile(output_csv_file):
+            mode = 'w'
+            header = True
+        else:
+            mode = 'a'
+        self._output_data_gdf.to_csv(
+            output_csv_file,
+            mode=mode,
+            header=header,
+            index=False
+        )
+        self._HEADER_AND_HEADER = False
+
+    def _format_data(self):
+
+        for start_date, end_date in self._dates_to_request:
+
+            data_requested = self._request_data(start_date, end_date)
+
+            if 'features' in data_requested:
+
+                try:
+                    output_data_gdf = gdf.GeoDataFrame.from_features(
+                        data_requested['features']
+                    )
+                except:
+                    output_data_features = fix_coords_point(data_requested['features'])
+                    output_data_gdf = gdf.GeoDataFrame.from_features(
+                        output_data_features
+                    )
+
+                output_data_gdf.crs = self._CRS
+                output_data_gdf['year'] = int(start_date.year)
+                output_data_gdf['month'] = int(start_date.month)
+                self._output_data_gdf = output_data_gdf[self._OUTPUT_COLUMNS]
+
+                if self._to_csv:
+                    self._write_data()
+                else:
+                    self._output_earthquakes_gdfs.append(
+                       self._output_data_gdf
+                    )
+                print '-> %s to %s proceed! (%s found)' % (start_date, end_date, len(self._output_data_gdf))
+
+            else:
+                print '-> %s to %s NO DATA FOUND!' % (start_date, end_date)
+
+
+
+
+
 START_DATE = 1950
 END_DATE = 2018
 URL = "https://earthquake.usgs.gov/fdsnws/event/1/query?format=geojson&starttime=%s&endtime=%s"
 
-dates_to_requests = get_month_start_end_date_from_period(START_DATE, END_DATE)
+# date_range = [
+#     (1950, 1969)
+#     # (1970, 1989)
+#     # (1990, 2009)
+#     # (2010, 2018)
+# ]
+#
+# for start_date, end_date in date_range:
+#     ImportEarthquakeData(URL, start_date, end_date).run()
+
+# t1 = ImportEarthquakeData(URL, 1950, 1969)
+# t2 = ImportEarthquakeData(URL, 1970, 1989)
+# t3 = ImportEarthquakeData(URL, 1990, 2009)
+t4 = ImportEarthquakeData(URL, 2010, 2018)
+
+# t1.start()
+# t2.start()
+# t3.start()
+t4.start()
+
+# t1.join()
+# t2.join()
+# t3.join()
+t4.join()
+
+assert False
 
 
-output_earthquakes_gdfs = []
-for start_date, end_date in dates_to_requests:
 
-    url = URL % (start_date, end_date)
-    output_data = RequestsData([url]).run()
-
-    if 'features' in output_data:
-
-        try:
-            earthquake_gdf = gdf.GeoDataFrame.from_features(
-                output_data['features']
-            )
-        except:
-            output_data_features = fix_coords_point(output_data['features'])
-            earthquake_gdf = gdf.GeoDataFrame.from_features(
-                output_data_features
-            )
-
-        earthquake_gdf.crs = {'init': 'epsg:4326'}
-        earthquake_gdf['year'] = int(start_date.year)
-        earthquake_gdf['month'] = int(start_date.month)
-        earthquake_gdf = earthquake_gdf[['geometry', 'mag', 'type', 'year', 'month']]
-        earthquake_gdf.to_csv('output.csv')
-
-        output_earthquakes_gdfs.append(
-            earthquake_gdf
-        )
-        print '-> %s to %s proceed! (%s found)' % (start_date, end_date, len(earthquake_gdf))
-
-    else:
-        print '-> %s to %s NO DATA FOUND!' % (start_date, end_date)
-
-output_earthquakes = pd.concat(output_earthquakes_gdfs).reset_index()
-output_earthquakes.to_file('earthquakes.gpkg', driver="GPKG")
 # # earthquake_bokeh = ColumnDataSource(data=earthquake_gdf_dict_by_year[years[0]])
 # earthquake_bokeh = ColumnDataSource(data=dict(x=[], y=[], mag=[], year=[]))
 #
