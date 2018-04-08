@@ -25,13 +25,16 @@ def fix_coords_point(features):
     return features
 
 
+
+
+
 class ImportEarthquakeData(Thread):
 
     def __init__(self, template_url, start_date, end_date, to_csv=True):
         Thread.__init__(self)
         self._IN_CRS = {'init': 'epsg:4326'}
         self._OUT_CRS = {'init': 'epsg:3857'}
-        self._OUTPUT_COLUMNS = ['x', 'y', 'mag', 'type', 'year', 'month']
+        self._OUTPUT_COLUMNS = ['x', 'y', 'mag', 'type', 'year', 'month', 'description']
 
         self._template_url = template_url
         self._start_date = start_date
@@ -48,6 +51,21 @@ class ImportEarthquakeData(Thread):
 
         self._get_dates_to_request()
         self._format_data()
+
+    @property
+    def _mag_description(self):
+        return {
+            'Null': (-9999, 0.1),
+            'Micro': (0.1, 2),
+            'Tres mineur': (2, 3),
+            'Mineur': (3, 4),
+            'Leger': (4, 5),
+            'Modere': (5, 6),
+            'Fort': (6, 7),
+            'Tres fort': (7, 8),
+            'Majeur': (8, 9),
+            'Devastateur': (9, 9999)
+        }
 
     def _get_dates_to_request(self):
 
@@ -105,7 +123,13 @@ class ImportEarthquakeData(Thread):
                 output_data_gdf['y'] = output_data_gdf.geometry.apply(lambda geom: geom.y)
                 output_data_gdf['year'] = int(start_date.year)
                 output_data_gdf['month'] = int(start_date.month)
+                output_data_gdf.fillna(0, inplace=True)
+                output_data_gdf['description'] = output_data_gdf.mag.apply(
+                    lambda x: [key for key, value in self._mag_description.items() if value[0] <= x < value[1]][0]
+                )
                 self._output_data_gdf = output_data_gdf[self._OUTPUT_COLUMNS]
+
+
 
                 if self._to_csv:
                     self._write_data()
@@ -127,19 +151,16 @@ t1 = ImportEarthquakeData(URL, 1950, 1969)
 t2 = ImportEarthquakeData(URL, 1970, 1989)
 t3 = ImportEarthquakeData(URL, 1990, 1999)
 t4 = ImportEarthquakeData(URL, 2000, 2009)
-t5 = ImportEarthquakeData(URL, 2010, 2009)
-t6 = ImportEarthquakeData(URL, 2010, 2018)
+t5 = ImportEarthquakeData(URL, 2010, 2018)
 
 t1.start()
 t2.start()
 t3.start()
 t4.start()
 t5.start()
-t6.start()
 
 t1.join()
 t2.join()
 t3.join()
 t4.join()
 t5.join()
-t6.join()
