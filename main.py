@@ -31,19 +31,19 @@ from bokeh.palettes import Plasma9
 
 import os
 
-OUTPUT_DATA_PATH = '.\data'
-
-csv_files = next(os.walk('.\data'))[2]
-earthquake_df = df.concat(
-    [
-        df.read_csv('%s\%s' % (OUTPUT_DATA_PATH, input_file))
-        for input_file in csv_files
-    ], ignore_index=True
-)
-earthquake_df = earthquake_df.loc[earthquake_df['mag'] > 0].copy()
 
 
-years = [min(earthquake_df.year), max(earthquake_df.year)]
+# csv_files = next(os.walk('.\data'))[2]
+# earthquake_df = df.concat(
+#     [
+#         df.read_csv('%s\%s' % (OUTPUT_DATA_PATH, input_file))
+#         for input_file in csv_files
+#     ], ignore_index=True
+# )
+#
+
+
+years = [1950, 2018]
 
 
 source_micro = ColumnDataSource(data=dict(x=[], y=[], mag=[], year=[], description=[]))
@@ -82,15 +82,19 @@ slider = Slider(start=years[0], end=years[-1], value=years[0], step=1, title="Ye
 
 def slider_update(attrname, old, new):
     year = slider.value
-    df_micro = earthquake_df.loc[(earthquake_df['year'] == year) & (earthquake_df['description'] == 'Micro')]
-    df_tres_mineur = earthquake_df.loc[(earthquake_df['year'] == year) & (earthquake_df['description'] == 'Tres mineur')]
-    df_mineur = earthquake_df.loc[(earthquake_df['year'] == year) & (earthquake_df['description'] == 'Mineur')]
-    df_leger = earthquake_df.loc[(earthquake_df['year'] == year) & (earthquake_df['description'] == 'Leger')]
-    df_modere = earthquake_df.loc[(earthquake_df['year'] == year) & (earthquake_df['description'] == 'Modere')]
-    df_fort = earthquake_df.loc[(earthquake_df['year'] == year) & (earthquake_df['description'] == 'Fort')]
-    df_tres_fort = earthquake_df.loc[(earthquake_df['year'] == year) & (earthquake_df['description'] == 'Tres fort')]
-    df_majeur = earthquake_df.loc[(earthquake_df['year'] == year) & (earthquake_df['description'] == 'Majeur')]
-    df_devastateur = earthquake_df.loc[(earthquake_df['year'] == year) & (earthquake_df['description'] == 'Devastateur')]
+    OUTPUT_DATA_PATH = '.\data'
+    earthquake_df = df.read_csv('%s\earthquake_%s.csv' % (OUTPUT_DATA_PATH, year))
+    earthquake_df = earthquake_df.loc[earthquake_df['mag'] > 0].copy()
+
+    df_micro = earthquake_df.loc[earthquake_df['description'] == 'Micro']
+    df_tres_mineur = earthquake_df.loc[earthquake_df['description'] == 'Tres mineur']
+    df_mineur = earthquake_df.loc[earthquake_df['description'] == 'Mineur']
+    df_leger = earthquake_df.loc[earthquake_df['description'] == 'Leger']
+    df_modere = earthquake_df.loc[earthquake_df['description'] == 'Modere']
+    df_fort = earthquake_df.loc[earthquake_df['description'] == 'Fort']
+    df_tres_fort = earthquake_df.loc[earthquake_df['description'] == 'Tres fort']
+    df_majeur = earthquake_df.loc[earthquake_df['description'] == 'Majeur']
+    df_devastateur = earthquake_df.loc[earthquake_df['description'] == 'Devastateur']
 
     label.text = str(year)
     source_micro.data = dict(
