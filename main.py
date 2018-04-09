@@ -110,15 +110,16 @@ plot.add_tile(STAMEN_TERRAIN_RETINA)
 
 
 
-plot.circle(x='x', y='y', source=source_micro, size=2, color=Plasma9[8], alpha=1, legend="Micro")
-plot.circle(x='x', y='y', source=source_tres_mineur, size=3, color=Plasma9[7], alpha=1, legend="Tres mineur")
-plot.circle(x='x', y='y', source=source_mineur, size=4, color=Plasma9[6], alpha=1, legend="Mineur")
-plot.circle(x='x', y='y', source=source_leger, size=5, color=Plasma9[5], alpha=1, legend="Leger")
-plot.circle(x='x', y='y', source=source_modere, size=6, color=Plasma9[4], alpha=1, legend="Modere")
-plot.circle(x='x', y='y', source=source_fort, size=7, color=Plasma9[3], alpha=1, legend="Fort")
-plot.circle(x='x', y='y', source=source_tres_fort, size=8, color=Plasma9[2], alpha=1, legend="Tres fort")
-plot.circle(x='x', y='y', source=source_majeur, size=9, color=Plasma9[1], alpha=1, legend="Majeur")
-plot.circle(x='x', y='y', source=source_devastateur, size=10, color=Plasma9[0], alpha=1, legend="Devastateur")
+plot.circle(x='x', y='y', source=source_micro, size=2, color=Plasma9[8], alpha=1, legend="Micro", line_width=0.1, line_color="white")
+plot.circle(x='x', y='y', source=source_tres_mineur, size=3, color=Plasma9[7], alpha=1, legend="Tres mineur", line_width=0.1, line_color="white")
+plot.circle(x='x', y='y', source=source_mineur, size=4, color=Plasma9[6], alpha=1, legend="Mineur", line_width=0.1, line_color="white")
+plot.circle(x='x', y='y', source=source_leger, size=5, color=Plasma9[5], alpha=1, legend="Leger", line_width=0.1, line_color="white")
+plot.circle(x='x', y='y', source=source_modere, size=6, color=Plasma9[4], alpha=1, legend="Modere", line_width=0.1, line_color="white")
+plot.circle(x='x', y='y', source=source_fort, size=7, color=Plasma9[3], alpha=1, legend="Fort", line_width=0.1, line_color="white")
+plot.circle(x='x', y='y', source=source_tres_fort, size=8, color=Plasma9[2], alpha=1, legend="Tres fort", line_width=0.1, line_color="white")
+plot.circle(x='x', y='y', source=source_majeur, size=9, color=Plasma9[1], alpha=1, legend="Majeur", line_width=0.1, line_color="white")
+plot.circle(x='x', y='y', source=source_devastateur, size=10, color=Plasma9[0], alpha=1, legend="Devastateur", line_width=0.1, line_color="white")
+
 
 
 class DataToBokeh(object):
@@ -136,23 +137,37 @@ class DataToBokeh(object):
         return source
 
     def _read_hdf_file(self):
-        df_eq = df.HDFStore('%s\earthquake2.hdf' % (self._input_data_path))
-        df_eq = df_eq.get_storer('y%s' % self._year).read()
-        df_eq = df_eq.loc[
-            (df_eq['mag'] > 0) & (df_eq['detail'] == self._detail_value)
-        ].copy()
+        # df_eq = df.HDFStore('%s\earthquake2.hdf' % (self._input_data_path))
+        df_eq = df.read_hdf(
+            '%s\earthquake2.hdf' % (self._input_data_path),
+            key='y%s' % self._year
+            # where="detail=['%s']" % self._detail_value
+        )
+
+        df_eq = df_eq.query("detail == '%s'" % self._detail_value)
+        # df_eq = df_eq.get_storer('y%s' % self._year).read()
+        # df_eq = df_eq.loc[
+        #     (df_eq['mag'] > 0) & (df_eq['detail'] == self._detail_value)
+        # ].copy()
 
         return df_eq
 
     def _create_datasource_output(self, dataframe):
 
+        x = dataframe['x'].tolist()
+        y = dataframe['y'].tolist()
+        mag = dataframe['mag'].tolist()
+        year = dataframe['year'].tolist()
+        detail = dataframe['detail'].tolist()
+        title = dataframe['title'].tolist()
+
         return dict(
-            x=dataframe['x'].tolist(),
-            y=dataframe['y'].tolist(),
-            mag=dataframe['mag'].tolist(),
-            year=dataframe['year'].tolist(),
-            detail=dataframe['detail'].tolist(),
-            title=dataframe['title'].tolist()
+            x=x,
+            y=y,
+            mag=mag,
+            year=year,
+            detail=detail,
+            title=title
     )
 
 def slider_update(attrname, old, new):
