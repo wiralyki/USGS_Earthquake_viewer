@@ -5,6 +5,7 @@ from core.time_helper import get_month_start_end_date_from_period
 from core.requests_helper import RequestsData
 import os
 from threading import Thread
+from pandas import HDFStore
 
 
 def fix_coords_point(features):
@@ -34,7 +35,7 @@ class ImportEarthquakeData(Thread):
         Thread.__init__(self)
         self._IN_CRS = {'init': 'epsg:4326'}
         self._OUT_CRS = {'init': 'epsg:3857'}
-        self._OUTPUT_COLUMNS = ['x', 'y', 'mag', 'type', 'year', 'month', 'description']
+        self._OUTPUT_COLUMNS = ['x', 'y', 'mag', 'eq_type', 'year', 'month', 'detail', 'title']
 
         self._template_url = template_url
         self._start_date = start_date
@@ -42,7 +43,7 @@ class ImportEarthquakeData(Thread):
         self._to_csv = to_csv
 
         # output
-        self._output_csv_name = 'data\earthquake_%s.csv'
+        self._output_csv_name = 'data\earthquake_%s.hdf'
         self._output_earthquakes_gdfs = []
 
     def run(self):
@@ -76,7 +77,6 @@ class ImportEarthquakeData(Thread):
 
     def _request_data(self, start_date, end_date):
 
-        self._start_year = start_date.year
         url = self._template_url % (start_date, end_date)
         data_requested = RequestsData([url]).run()
 
@@ -85,17 +85,27 @@ class ImportEarthquakeData(Thread):
     def _write_data(self):
 
         header = False
-        output_csv_file = self._output_csv_name % self._start_year
+        # output_csv_file = self._output_csv_name % self._start_date_proceed.year
+        output_csv_file = 'data\earthquake2.hdf'
         if not os.path.isfile(output_csv_file):
             mode = 'w'
             header = True
         else:
             mode = 'a'
-        self._output_data_gdf.to_csv(
+        self._output_data_gdf.to_hdf(
             output_csv_file,
             mode=mode,
-            header=header,
-            index=False
+            format='table',
+            append=True,
+            key='y%s' % self._start_date_proceed.year,
+            min_itemsize={
+                'eq_type': 22,
+                'detail': 11,
+                'title': 70
+            },
+            data_columns=['detail']
+            # header=header,
+            # index=False
         )
         self._HEADER_AND_HEADER = False
 
@@ -103,6 +113,7 @@ class ImportEarthquakeData(Thread):
 
         for start_date, end_date in self._dates_to_request:
 
+            self._start_date_proceed = start_date
             data_requested = self._request_data(start_date, end_date)
 
             if 'features' in data_requested:
@@ -123,8 +134,11 @@ class ImportEarthquakeData(Thread):
                 output_data_gdf['y'] = output_data_gdf.geometry.apply(lambda geom: geom.y)
                 output_data_gdf['year'] = int(start_date.year)
                 output_data_gdf['month'] = int(start_date.month)
+                output_data_gdf.rename(columns={'type': 'eq_type'}, inplace=True)
+                output_data_gdf['eq_type'] = output_data_gdf['eq_type'].astype(str)
+                output_data_gdf['title'] = output_data_gdf['title'].astype(str)
                 output_data_gdf.fillna(0, inplace=True)
-                output_data_gdf['description'] = output_data_gdf.mag.apply(
+                output_data_gdf['detail'] = output_data_gdf.mag.apply(
                     lambda x: [key for key, value in self._mag_description.items() if value[0] <= x < value[1]][0]
                 )
                 self._output_data_gdf = output_data_gdf[self._OUTPUT_COLUMNS]
@@ -152,13 +166,13 @@ t2 = ImportEarthquakeData(URL, 1970, 1989)
 t3 = ImportEarthquakeData(URL, 1990, 1999)
 t4 = ImportEarthquakeData(URL, 2000, 2009)
 t5 = ImportEarthquakeData(URL, 2010, 2018)
-
+#
 t1.start()
 t2.start()
 t3.start()
 t4.start()
 t5.start()
-
+#
 t1.join()
 t2.join()
 t3.join()
