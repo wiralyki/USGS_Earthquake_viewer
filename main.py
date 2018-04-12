@@ -34,40 +34,7 @@ import os
 
 
 
-data = df.HDFStore('shake_me\data\earthquake2.hdf')
-# csv_files = next(os.walk('data'))[2]
-earthquake_df = df.concat([
-    data.get_storer(f).read().groupby(['year']).size().reset_index(name='count')
-    for f in data.keys()
-])
-
-count_eq = ColumnDataSource(dict(
-    year=[str(value) for value in earthquake_df['year'].tolist()],
-    count=earthquake_df['count'].tolist()
-))
-
-TOOLS = "box_select,lasso_select,help"
-hover = HoverTool(tooltips=[
-    ('annee', '@year'),
-    ('nombre', '@count')],
-     mode='vline')
-histo = figure(
-    x_range=[str(value) for value in earthquake_df['year'].tolist()],
-    plot_height=800,
-    plot_width=1300,
-    title="eq Counts",
-    tools=[hover, TOOLS]
-)
-histo.vbar(
-    source=count_eq,
-    x='year',
-    top='count',
-    width=1,
-    fill_color="#b3de69"
-)
-histo.xgrid.grid_line_color = None
-histo.y_range.start = 0
-
+data = df.HDFStore('shake_me\data\earthquake4.hdf')
 
 years = [1950, 2018]
 
@@ -102,13 +69,7 @@ plot = figure(
     output_backend="webgl"
 )
 
-label = Label(x=1.1, y=18, text=str(years[0]), text_font_size='70pt', text_color='#eeeeee')
-plot.add_layout(label)
-
 plot.add_tile(STAMEN_TERRAIN_RETINA)
-
-
-
 
 plot.circle(x='x', y='y', source=source_micro, size=2, color=Plasma9[8], alpha=1, legend="Micro", line_width=0.1, line_color="white")
 plot.circle(x='x', y='y', source=source_tres_mineur, size=3, color=Plasma9[7], alpha=1, legend="Tres mineur", line_width=0.1, line_color="white")
@@ -121,11 +82,11 @@ plot.circle(x='x', y='y', source=source_majeur, size=9, color=Plasma9[1], alpha=
 plot.circle(x='x', y='y', source=source_devastateur, size=10, color=Plasma9[0], alpha=1, legend="Devastateur", line_width=0.1, line_color="white")
 
 
-
 class DataToBokeh(object):
 
-    def __init__(self, year, input_data_path, detail_value):
+    def __init__(self, input_data, year, input_data_path, detail_value):
 
+        self._input_data = input_data
         self._year = year
         self._input_data_path = input_data_path
         self._detail_value = detail_value
@@ -138,17 +99,20 @@ class DataToBokeh(object):
 
     def _read_hdf_file(self):
         # df_eq = df.HDFStore('%s\earthquake2.hdf' % (self._input_data_path))
-        df_eq = df.read_hdf(
-            '%s\earthquake2.hdf' % (self._input_data_path),
-            key='y%s' % self._year
+        # df_eq = df.read_hdf(
+        #     '%s\earthquake2.hdf' % (self._input_data_path),
+        #     key='y%s' % self._year
             # where="detail=['%s']" % self._detail_value
-        )
-
-        df_eq = df_eq.query("detail == '%s'" % self._detail_value)
-        # df_eq = df_eq.get_storer('y%s' % self._year).read()
-        # df_eq = df_eq.loc[
-        #     (df_eq['mag'] > 0) & (df_eq['detail'] == self._detail_value)
+        # )
+        # df_eq = self._input_data.loc[
+        #     (self._input_data['mag'] > 0) & (self._input_data['detail'] == self._detail_value)
         # ].copy()
+        # print len(df_eq)
+        # df_eq = df_eq.query("detail == '%s'" % self._detail_value)
+        df_eq = self._input_data.get_storer('y%s' % self._year).read()
+        df_eq = df_eq.loc[
+            (df_eq['mag'] > 0) & (df_eq['detail'] == self._detail_value)
+        ]
 
         return df_eq
 
@@ -168,12 +132,11 @@ class DataToBokeh(object):
             year=year,
             detail=detail,
             title=title
-    )
+        )
+        return dataframe
 
 def slider_update(attrname, old, new):
     year = slider.value
-    label.text = str(year)
-
     detail_list = {
         'Micro': source_micro,
         'Tres mineur': source_tres_mineur,
@@ -185,8 +148,9 @@ def slider_update(attrname, old, new):
         'Majeur': source_majeur,
         'Devastateur': source_devastateur
     }
+
     for detail_value, source in detail_list.items():
-        source.data = DataToBokeh(year, '.\shake_me\data', detail_value).run()
+        source.data = DataToBokeh(data, year, '.\shake_me\data', detail_value).run()
 
 # Add the slider
 slider = Slider(start=years[0], end=years[-1], value=years[0], step=1, title="Year")
@@ -217,8 +181,8 @@ plot.legend.click_policy="hide"
 layout = column(
     row(plot),
     row(slider),
-    row(button_past, button_next),
-    row(histo)
+    row(button_past, button_next)
+    # row(histo)
 )
 
 curdoc().add_root(layout)

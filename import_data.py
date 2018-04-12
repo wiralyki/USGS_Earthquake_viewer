@@ -83,7 +83,7 @@ class ImportEarthquakeData(Thread):
 
         header = False
         # output_csv_file = self._output_csv_name % self._start_date_proceed.year
-        output_csv_file = 'data\earthquake3.hdf'
+        output_csv_file = 'data\earthquake4.hdf'
         if not os.path.isfile(output_csv_file):
             mode = 'w'
             header = True
@@ -98,7 +98,7 @@ class ImportEarthquakeData(Thread):
             min_itemsize={
                 'eq_type': 22,
                 'detail': 11,
-                'title': 91
+                'title': 100
             },
             data_columns=True
             # header=header,
@@ -133,7 +133,7 @@ class ImportEarthquakeData(Thread):
                 output_data_gdf['month'] = int(start_date.month)
                 output_data_gdf.rename(columns={'type': 'eq_type'}, inplace=True)
                 output_data_gdf['eq_type'] = output_data_gdf['eq_type'].astype(str)
-                output_data_gdf['title'] = output_data_gdf['title'].apply(lambda x: str(x.decode('ascii', 'ignore')))
+                output_data_gdf['title'] = output_data_gdf['title'].apply(lambda x: str(x.encode('utf-8')))
                 output_data_gdf.fillna(0, inplace=True)
                 output_data_gdf['detail'] = output_data_gdf.mag.apply(
                     lambda x: [key for key, value in self._mag_description.items() if value[0] <= x < value[1]][0]
@@ -163,13 +163,13 @@ t2 = ImportEarthquakeData(URL, 1970, 1989)
 t3 = ImportEarthquakeData(URL, 1990, 1999)
 t4 = ImportEarthquakeData(URL, 2000, 2009)
 t5 = ImportEarthquakeData(URL, 2010, 2018)
-#
+
 t1.start()
 t2.start()
 t3.start()
 t4.start()
 t5.start()
-#
+
 t1.join()
 t2.join()
 t3.join()
