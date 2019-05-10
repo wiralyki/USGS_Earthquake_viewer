@@ -1,41 +1,22 @@
-# display earthquakes
 
 import geopandas as gdf
-from core.time_helper import get_month_start_end_date_from_period
-# from core.requests_helper import RequestsData
-import os
-from threading import Thread
 
 import grequests
 import itertools
 
-def fix_coords_point(features):
-    for num, value in enumerate(features):
-
-        if (not isinstance(value['geometry']['coordinates'][0], (int, float))
-                or not isinstance(value['geometry']['coordinates'][1], (int, float))
-        ):
-            del features[num]
-
-        elif len(value['geometry']['coordinates']) == 3:
-            if not isinstance(value['geometry']['coordinates'][-1], (int, float)):
-                features[num]['geometry']['coordinates'] = [
-                    value['geometry']['coordinates'][0],
-                    value['geometry']['coordinates'][1],
-                    float(0)
-                ]
-    return features
+from core.time_helper import get_month_start_end_date_from_period
+from core.geom_helper import ogr_reprojection
 
 
 class ImportUsgsEarthquakeData:
 
     _URL = "https://earthquake.usgs.gov/fdsnws/event/1/query?format=geojson&starttime=%s&endtime=%s&minmagnitude=5"
-    _FIELDS_PROPERTIES_TO_KEEP = ['mag', 'place', 'url', 'magType', 'type', 'title']
+    _FIELDS_PROPERTIES_TO_KEEP = ['mag', 'place', 'url', 'magType', 'type', 'title', 'x', 'y', 'year']
 
     def __init__(self, start_date, end_date, output_csv=None):
 
-        self._IN_CRS = {'init': 'epsg:4326'}
-        self._OUT_CRS = {'init': 'epsg:3857'}
+        self._IN_CRS = 4326
+        self._OUT_CRS = 3857
         self._OUTPUT_COLUMNS = ['x', 'y', 'mag', 'type', 'year', 'month']
 
         self._start_date = start_date
@@ -51,7 +32,8 @@ class ImportUsgsEarthquakeData:
         self._query_requests()
         self._get_data()
         self._clean_data()
-        # self._format_data()
+
+        return self._data
 
     def _get_dates_to_request(self):
 
@@ -84,12 +66,22 @@ class ImportUsgsEarthquakeData:
             # None value on Z...
             self._data[idx]['geometry']['coordinates'] = self._data[idx]['geometry']['coordinates'][:2]
 
-        self._data = gdf.GeoDataFrame.from_features(self._data)[self._FIELDS_PROPERTIES_TO_KEEP]
-        self._data['year'] = self._start_date
+        self._data = gdf.GeoDataFrame.from_features(self._data)
+        self._data.loc[:, 'year'] = str(self._start_date)
+
+
+        #pyproj bug on windows... cannot use to_crs...
+        self._data['geometry'] = self._data['geometry'].apply(lambda x: ogr_reprojection(x, self._IN_CRS, self._OUT_CRS))
+        self._data['x'] = self._data.geometry.x
+        self._data['y'] = self._data.geometry.y
+
+        self._data = self._data[self._FIELDS_PROPERTIES_TO_KEEP]
+
 
 if __name__ == '__main__':
 
     START_DATE = 1950
     END_DATE = START_DATE + 1
 
-    t1 = ImportEarthquakeData(START_DATE, END_DATE).run()
+    t1 = ImportUsgsEarthquakeData(START_DATE, END_DATE).run()
+    print('aa')
