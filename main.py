@@ -29,64 +29,100 @@ from bokeh.plotting import ColumnDataSource
 from bokeh.plotting import figure
 from bokeh.tile_providers import STAMEN_TERRAIN_RETINA
 
+from bokeh.models.widgets import TextInput
+from core.data_helper import ImportUsgsEarthquakeData
 
 
-import os
-from shapely.wkt import loads
-# import and format data csv in update
+class GridsToBokeh(object):
 
-OUTPUT_DATA_PATH = '.\data'
-OUTPUT_DATA_CRS = {'init': 'epsg:4326'}
-OUTPUT_DATA_CRS_BOKEH = {'init': 'epsg:3857'}
+    _TOOLS = "pan,wheel_zoom,box_zoom,reset,save"
 
-csv_files = next(os.walk('.\data'))[2]
-earthquake_df = df.concat(
-    [
-        df.read_csv('%s\%s' % (OUTPUT_DATA_PATH, input_file))
-        for input_file in csv_files
-    ], ignore_index=True
-)
-years = [min(earthquake_df.year), max(earthquake_df.year)]
+    def __init__(self):
 
-source = ColumnDataSource(data=dict(x=[], y=[], mag=[], year=[]))
+        source_data_formated = dict(mag=[], place=[], url=[], magType=[], type=[], title=[], x=[], y=[])
 
-# display data
-TOOLS = "pan,wheel_zoom,box_zoom,reset,save"
-plot = figure(title="Shake me !", tools=TOOLS,
-           plot_width=1000, plot_height=800, active_scroll = "wheel_zoom", output_backend="webgl")
+        self.source_data = ColumnDataSource(data=source_data_formated)
 
-label = Label(x=1.1, y=18, text=str(years[0]), text_font_size='70pt', text_color='#eeeeee')
-plot.add_layout(label)
+        self._BOKEH_EPSG = "3857"
 
-plot.add_tile(STAMEN_TERRAIN_RETINA)
+        self._X_RANGE_DEFAULT = (-200000, 600000)
+        self._Y_RANGE_DEFAULT = (-100000, 700000)
 
-color_mapper = LinearColorMapper(palette='Magma256', low=min(earthquake_df['mag']), high=max(earthquake_df['mag']))
-plot.circle(
-    x='x',
-    y='y',
-    source=source,
-    size=2,
-    color={'field': 'mag', 'transform': color_mapper},
-    alpha=1,
-    legend="earthquake"
-)
+    def run(self):
+        self._bokeh_widgets()
+        self._bokeh_map_init()
+        self._bokeh_layers_init()
+        self._bokeh_map_layout()
 
-# Add the slider
-slider = Slider(start=years[0], end=years[-1], value=years[0], step=1, title="Year")
 
-def slider_update(attrname, old, new):
-    year = slider.value
-    df = earthquake_df.loc[earthquake_df['year'] == year]
-    label.text = str(year)
-    source.data = dict(
-        x=df['x'].tolist(),
-        y=df['y'].tolist(),
-        mag=df['mag'].tolist(),
-        year=df['year'].tolist()
-    )
-slider.on_change('value', slider_update)
+    def _bokeh_map_init(self):
 
-layout = row(plot, slider)
+        # set canvas
+        self._plot = figure(
+            title="USGS EarthQuakes !",
+            plot_width=800,
+            plot_height=600,
+            x_range=self._X_RANGE_DEFAULT,
+            y_range=self._Y_RANGE_DEFAULT,
+            x_axis_type="mercator",
+            y_axis_type="mercator",
+            output_backend="webgl",
+            tools=self._TOOLS
+        )
 
-curdoc().add_root(layout)
-curdoc().title = "Map_test"
+        # set background map
+        self._plot.add_tile(STAMEN_TERRAIN_RETINA)
+
+
+    def _bokeh_map_layout(self):
+        layout = column(
+            row(self._plot),
+            # row(self._geom_input_wkt, self._from_epsg_value),
+            # row(widgetbox(self._grid_type)),
+            # row(self._res_x_value, self._res_y_value),
+            # row(self._slider_rotation),
+            # row(widgetbox(self._exporting, self._to_epsg_value))
+        )
+
+        curdoc().add_root(layout)
+        curdoc().title = "Map_test"
+
+
+    def _bokeh_layers_init(self):
+
+        self._plot.circle(
+            x='x',
+            y='y',
+            source=self.source_data,
+            size=2,
+            color={'field': 'mag', 'transform': color_mapper},
+            alpha=1,
+            legend="earthquake"
+        )
+        label = Label(x=1.1, y=18, text=str(years[0]), text_font_size='70pt', text_color='#eeeeee')
+        self._plot.add_layout(label)
+
+
+    def _bokeh_widgets(self):
+
+        self._display_year_widget = TextInput(value="500", title="year")
+        self._display_year_widget.on_change('value', self.__pull_data_from_year)
+
+    def __pull_data_from_year(self, attrname, old, new):
+        data = ImportUsgsEarthquakeData(
+            self._display_year_widget,
+            self._display_year_widget + 1
+        ).run()
+
+        self.source_data.data = dict(
+            mag=data['mag'].tolist(),
+            place=data['place'].tolist(),
+            url=data['url'].tolist(),
+            magType=data['magType'].tolist(),
+            type=data['type'].tolist(),
+            title=data['title'].tolist(),
+            x=data['x'].tolist(),
+            y=data['y'].tolist()
+        )
+
+
