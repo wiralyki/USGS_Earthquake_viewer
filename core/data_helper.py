@@ -41,6 +41,8 @@ class ImportUsgsEarthquakeData:
             self._start_date,
             self._end_date
         )
+        # get min and max date
+        self._dates_to_request = [(self._dates_to_request[0][0], self._dates_to_request[-1][-1])]
 
     def _prepare_requests(self):
         self._requests = [
@@ -80,7 +82,7 @@ class ImportUsgsEarthquakeData:
 
 if __name__ == '__main__':
 
-    START_DATE = 1950
+    START_DATE = 2018
     END_DATE = START_DATE + 1
 
     t1 = ImportUsgsEarthquakeData(START_DATE, END_DATE).run()
