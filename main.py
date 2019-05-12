@@ -22,20 +22,21 @@ from bokeh.plotting import figure
 from bokeh.tile_providers import STAMEN_TERRAIN_RETINA
 from bokeh.models.widgets import TextInput
 from core.data_helper import ImportUsgsEarthquakeData
+from bokeh.models import ColumnDataSource, TableColumn, DateFormatter, DataTable, NumberFormatter
 from bokeh.models import BoxSelectTool
 
 
 class ShakeMeToBokeh:
 
-    _TOOLS = "pan,wheel_zoom,box_zoom,reset,save"
+    _TOOLS = "box_select,pan,wheel_zoom,box_zoom,reset,save"
 
     def __init__(self):
 
         source_data_formated = dict(mag=[], place=[], year=[], url=[], magType=[], type=[], title=[], x=[], y=[])
         self.source_data = ColumnDataSource(data=source_data_formated)
 
-        self._X_RANGE_DEFAULT = (-800000, 1200000)
-        self._Y_RANGE_DEFAULT = (-400000, 1400000)
+        self._X_RANGE_DEFAULT = (-2000000, 6000000)
+        self._Y_RANGE_DEFAULT = (-1000000, 7000000)
 
     def run(self):
         self._symbology()
@@ -57,7 +58,7 @@ class ShakeMeToBokeh:
         # set canvas
         self._plot = figure(
             title="USGS EarthQuakes !",
-            plot_width=800,
+            plot_width=1024,
             plot_height=600,
             x_range=self._X_RANGE_DEFAULT,
             y_range=self._Y_RANGE_DEFAULT,
@@ -78,11 +79,11 @@ class ShakeMeToBokeh:
             row(self._display_year_widget),
             # row(self._res_x_value, self._res_y_value),
             row(self._slider),
-            # row(widgetbox(self._exporting, self._to_epsg_value))
+            row(self._data_table),
         )
 
         curdoc().add_root(layout)
-        curdoc().title = "Map_test"
+        curdoc().title = "USGS Earthquakes Viewer"
 
 
     def _bokeh_layers_init(self):
@@ -96,6 +97,17 @@ class ShakeMeToBokeh:
             alpha=1,
             legend="earthquake"
         )
+
+        mag_format = NumberFormatter(format='0.0')
+        table_columns = [
+            TableColumn(field="title", title="nom"),
+            TableColumn(field="place", title="Localisation"),
+            TableColumn(field="year", title="Année"),
+            TableColumn(field="mag", title="Magnitude", formatter=mag_format),
+            TableColumn(field="url", title="Détails"),
+            TableColumn(field="type", title="Type"),
+        ]
+        self._data_table = DataTable(source=self.source_data, columns=table_columns, width=1024, height=250, editable=True)
 
 
     def _bokeh_widgets(self):
@@ -112,17 +124,7 @@ class ShakeMeToBokeh:
             int(self._display_year_widget.value) + 1
         ).run()
         print(len(data))
-        self.source_data.data = dict(
-            mag=data['mag'].tolist(),
-            place=data['place'].tolist(),
-            url=data['url'].tolist(),
-            year=data['year'].tolist(),
-            magType=data['magType'].tolist(),
-            type=data['type'].tolist(),
-            title=data['title'].tolist(),
-            x=data['x'].tolist(),
-            y=data['y'].tolist()
-        )
+        self.source_data.data = self.__format_source_data(data)
 
     def _slider_update(self, attrname, old, new):
         data = ImportUsgsEarthquakeData(
@@ -130,19 +132,21 @@ class ShakeMeToBokeh:
             int(self._slider.value) + 1
         ).run()
         print(len(data))
-        # label.text = self._display_year_widget.value
-        self.source_data.data = dict(
-            mag=data['mag'].tolist(),
-            place=data['place'].tolist(),
-            url=data['url'].tolist(),
-            year=data['year'].tolist(),
-            magType=data['magType'].tolist(),
-            type=data['type'].tolist(),
-            title=data['title'].tolist(),
-            x=data['x'].tolist(),
-            y=data['y'].tolist()
-        )
 
+        self.source_data.data = self.__format_source_data(data)
+
+    def __format_source_data(self, source_data):
+        return dict(
+            mag=source_data['mag'].tolist(),
+            place=source_data['place'].tolist(),
+            url=source_data['url'].tolist(),
+            year=source_data['year'].tolist(),
+            magType=source_data['magType'].tolist(),
+            type=source_data['type'].tolist(),
+            title=source_data['title'].tolist(),
+            x=source_data['x'].tolist(),
+            y=source_data['y'].tolist()
+        )
 
 
     def _symbology(self):
