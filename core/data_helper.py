@@ -81,7 +81,7 @@ class ImportUsgsEarthquakeData:
 
 if __name__ == '__main__':
 
-    START_DATE = 2010
+    START_DATE = 1950
     END_DATE = START_DATE + 1
 
     t1 = ImportUsgsEarthquakeData(START_DATE, END_DATE, 2).run()

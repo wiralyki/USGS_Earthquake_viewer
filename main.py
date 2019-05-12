@@ -106,7 +106,7 @@ class ShakeMeToBokeh:
             int(self._slider_widget.value) + 1,
             self._mag_value_widget.value
         ).run()
-        self._earthquakes_count = len(data)
+        print(len(data))
 
         self.source_data.data = self.__format_source_data(data)
 
@@ -116,8 +116,7 @@ class ShakeMeToBokeh:
             int(self._slider_widget.value) + 1,
             self._mag_value_widget.value
         ).run()
-
-        self._earthquakes_count = len(data)
+        print(len(data))
 
         self.source_data.data = self.__format_source_data(data)
 
