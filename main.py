@@ -139,9 +139,9 @@ class ShakeMeToBokeh:
 
     def _symbology(self):
         self._color_mapper = LinearColorMapper(
-            palette='Magma256',
-            low=1,
-            high=10
+            palette='Magma10',
+            low=10,
+            high=1
         )
 
     def _source_text_elements(self):
