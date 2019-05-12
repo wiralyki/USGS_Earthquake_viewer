@@ -5,7 +5,7 @@ import grequests
 import itertools
 
 from core.time_helper import get_month_start_end_date_from_period
-from core.geom_helper import ogr_reprojection
+from core.geom_helper import pyproj_reprojection
 
 
 class ImportUsgsEarthquakeData:
@@ -51,7 +51,6 @@ class ImportUsgsEarthquakeData:
         ]
 
     def _query_requests(self):
-        import json
         self._requests = grequests.map(self._requests)
 
     def _get_data(self):
@@ -63,7 +62,6 @@ class ImportUsgsEarthquakeData:
         )
 
     def _clean_data(self):
-        #optimize field
         for idx in range(len(self._data)):
             # None value on Z...
             self._data[idx]['geometry']['coordinates'] = self._data[idx]['geometry']['coordinates'][:2]
@@ -71,9 +69,8 @@ class ImportUsgsEarthquakeData:
         self._data = gdf.GeoDataFrame.from_features(self._data)
         self._data.loc[:, 'year'] = str(self._start_date)
 
-
         #pyproj bug on windows... cannot use to_crs...
-        self._data['geometry'] = self._data['geometry'].apply(lambda x: ogr_reprojection(x, self._IN_CRS, self._OUT_CRS))
+        self._data['geometry'] = self._data['geometry'].apply(lambda x: pyproj_reprojection(x, self._IN_CRS, self._OUT_CRS))
         self._data['x'] = self._data.geometry.x
         self._data['y'] = self._data.geometry.y
 
