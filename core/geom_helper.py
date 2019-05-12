@@ -1,12 +1,13 @@
-from shapely.wkt import loads
-from shapely.ops import transform
+
 import pyproj
+
+from shapely.ops import transform
 from functools import partial
 
 
-def ogr_reprojection(geometry, from_epsg, to_epsg):
+def pyproj_reprojection(geometry, from_epsg, to_epsg):
     """
-    ogr_reprojection
+    pyproj_reprojection
 
     :type geometry: shapely.geometry.*
     :type from_epsg: int
