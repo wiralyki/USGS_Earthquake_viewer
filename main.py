@@ -18,6 +18,8 @@ class ShakeMeToBokeh:
 
     def __init__(self):
 
+        self._earthquakes_count = 0
+
         source_data_formated = dict(mag=[], place=[], year=[], url=[], magType=[], title=[], x=[], y=[])
         self.source_data = ColumnDataSource(data=source_data_formated)
 
@@ -29,6 +31,7 @@ class ShakeMeToBokeh:
         self._bokeh_widgets()
         self._bokeh_map_init()
         self._bokeh_layers_init()
+        self._source_text_elements()
         self._bokeh_map_layout()
 
 
@@ -59,12 +62,13 @@ class ShakeMeToBokeh:
     def _bokeh_map_layout(self):
         layout = column(
             row(self._plot),
-            row(self._slider, self._sources_text),
+            row(self._mag_value_widget, self._slider_widget, self._sources_text),
             row(self._data_table),
         )
 
         curdoc().add_root(layout)
         curdoc().title = "USGS Earthquakes Viewer"
+
 
     def _bokeh_layers_init(self):
 
@@ -90,21 +94,30 @@ class ShakeMeToBokeh:
 
     def _bokeh_widgets(self):
 
-        self._slider = Slider(start=1950, end=2019, value=1950, step=1, title="Barre temporelle")
-        self._slider.on_change('value', self._slider_update)
+        self._mag_value_widget = TextInput(value="5", title="Choisir la magnitude minimale:")
+        self._mag_value_widget.on_change('value', self.__min_mag_value)
 
-        self._sources_text = PreText(
-            text=open(self._SOURCES_FILE, 'r').read(),
-            width=500,
-            height=100
-        )
+        self._slider_widget = Slider(start=1950, end=2019, value=1950, step=1, title="Barre temporelle")
+        self._slider_widget.on_change('value', self.__slider_update)
 
-    def _slider_update(self, attrname, old, new):
+    def __min_mag_value(self, attrname, old, new):
         data = ImportUsgsEarthquakeData(
-            int(self._slider.value),
-            int(self._slider.value) + 1
+            int(self._slider_widget.value),
+            int(self._slider_widget.value) + 1,
+            self._mag_value_widget.value
         ).run()
-        print(len(data))
+        self._earthquakes_count = len(data)
+
+        self.source_data.data = self.__format_source_data(data)
+
+    def __slider_update(self, attrname, old, new):
+        data = ImportUsgsEarthquakeData(
+            int(self._slider_widget.value),
+            int(self._slider_widget.value) + 1,
+            self._mag_value_widget.value
+        ).run()
+
+        self._earthquakes_count = len(data)
 
         self.source_data.data = self.__format_source_data(data)
 
@@ -125,7 +138,6 @@ class ShakeMeToBokeh:
             y=source_data['y'].tolist()
         )
 
-
     def _symbology(self):
         self._color_mapper = LinearColorMapper(
             palette='Magma256',
@@ -133,5 +145,11 @@ class ShakeMeToBokeh:
             high=10
         )
 
+    def _source_text_elements(self):
+        self._sources_text = PreText(
+            text=open(self._SOURCES_FILE, 'r').read(),
+            width=500,
+            height=100
+        )
 
 ShakeMeToBokeh().run()
