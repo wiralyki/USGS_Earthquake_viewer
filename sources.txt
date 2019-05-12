@@ -1,0 +1,2 @@
+Data source: USGS (https://earthquake.usgs.gov/fdsnws/event/1).
+By yruama42 (2019): https://github.com/yruama42/Earthquake_viewer.
