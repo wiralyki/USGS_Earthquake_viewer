@@ -10,17 +10,18 @@ from core.geom_helper import pyproj_reprojection
 
 class ImportUsgsEarthquakeData:
 
-    _URL = "https://earthquake.usgs.gov/fdsnws/event/1/query?format=geojson&starttime=%s&endtime=%s&minmagnitude=5"
+    _URL = "https://earthquake.usgs.gov/fdsnws/event/1/query?format=geojson&starttime=%s&endtime=%s&minmagnitude=%s"
     _FIELDS_PROPERTIES_TO_KEEP = ['mag', 'place', 'url', 'magType', 'type', 'title', 'x', 'y', 'year']
 
-    def __init__(self, start_date, end_date, output_csv=None):
+    def __init__(self, start_date, end_date, min_mag=5, output_csv=None):
 
         self._IN_CRS = 4326
         self._OUT_CRS = 3857
         self._OUTPUT_COLUMNS = ['x', 'y', 'mag', 'type', 'year', 'month']
 
-        self._start_date = start_date
-        self._end_date = end_date
+        self._start_date = int(start_date)
+        self._end_date = int(end_date)
+        self._min_mag = int(min_mag)
         self._output_csv = output_csv
 
         # output
@@ -46,11 +47,12 @@ class ImportUsgsEarthquakeData:
 
     def _prepare_requests(self):
         self._requests = [
-            grequests.get(self._URL % (start, end))
+            grequests.get(self._URL % (start, end, self._min_mag))
             for start, end in self._dates_to_request
         ]
 
     def _query_requests(self):
+        #TODO Test if response == 200
         self._requests = grequests.map(self._requests)
 
     def _get_data(self):
@@ -79,8 +81,8 @@ class ImportUsgsEarthquakeData:
 
 if __name__ == '__main__':
 
-    START_DATE = 2018
+    START_DATE = 2010
     END_DATE = START_DATE + 1
 
-    t1 = ImportUsgsEarthquakeData(START_DATE, END_DATE).run()
+    t1 = ImportUsgsEarthquakeData(START_DATE, END_DATE, 2).run()
     print('aa')
