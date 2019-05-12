@@ -18,7 +18,10 @@ def pyproj_reprojection(geometry, from_epsg, to_epsg):
     geom_reprojected = transform(
         partial(
             pyproj.transform,
-            pyproj.Proj(init='EPSG:4326'),
-            pyproj.Proj(init='EPSG:3857')), geometry)
+            pyproj.Proj(init=f'EPSG:{from_epsg}'),
+            pyproj.Proj(init=f'EPSG:{to_epsg}')
+        ),
+        geometry
+    )
 
     return geom_reprojected
