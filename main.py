@@ -32,7 +32,7 @@ class ShakeMeToBokeh:
 
     def __init__(self):
 
-        source_data_formated = dict(mag=[], place=[], year=[], url=[], magType=[], type=[], title=[], x=[], y=[])
+        source_data_formated = dict(mag=[], place=[], year=[], url=[], magType=[], title=[], x=[], y=[])
         self.source_data = ColumnDataSource(data=source_data_formated)
 
         self._X_RANGE_DEFAULT = (-2000000, 6000000)
@@ -75,10 +75,7 @@ class ShakeMeToBokeh:
     def _bokeh_map_layout(self):
         layout = column(
             row(self._plot),
-            # row(self._geom_input_wkt, self._from_epsg_value),
-            row(self._display_year_widget),
-            # row(self._res_x_value, self._res_y_value),
-            row(self._slider),
+            row(self._display_year_widget, self._slider),
             row(self._data_table),
         )
 
@@ -105,17 +102,15 @@ class ShakeMeToBokeh:
             TableColumn(field="year", title="Année"),
             TableColumn(field="mag", title="Magnitude", formatter=mag_format),
             TableColumn(field="url", title="Détails"),
-            TableColumn(field="type", title="Type"),
         ]
         self._data_table = DataTable(source=self.source_data, columns=table_columns, width=1024, height=250, editable=True)
 
-
     def _bokeh_widgets(self):
 
-        self._display_year_widget = TextInput(value="1950", title="Année")
+        self._display_year_widget = TextInput(value="1950", title="Choisir une année :")
         self._display_year_widget.on_change('value', self.__pull_data_from_year)
 
-        self._slider = Slider(start=1950, end=2019, value=1950, step=1, title="Année")
+        self._slider = Slider(start=1950, end=2019, value=1950, step=1, title="Barre temporelle")
         self._slider.on_change('value', self._slider_update)
 
     def __pull_data_from_year(self, attrname, old, new):
@@ -142,7 +137,6 @@ class ShakeMeToBokeh:
             url=source_data['url'].tolist(),
             year=source_data['year'].tolist(),
             magType=source_data['magType'].tolist(),
-            type=source_data['type'].tolist(),
             title=source_data['title'].tolist(),
             x=source_data['x'].tolist(),
             y=source_data['y'].tolist()
