@@ -1,7 +1,8 @@
 from shapely.wkt import loads
+from shapely.ops import transform
+import pyproj
+from functools import partial
 
-from osgeo import ogr
-from osgeo import osr
 
 def ogr_reprojection(geometry, from_epsg, to_epsg):
     """
@@ -13,17 +14,10 @@ def ogr_reprojection(geometry, from_epsg, to_epsg):
     :rtype: shapely.geometry.*
     """
 
-    source_epsg = osr.SpatialReference()
-    source_epsg.ImportFromEPSG(from_epsg)
+    geom_reprojected = transform(
+        partial(
+            pyproj.transform,
+            pyproj.Proj(init='EPSG:4326'),
+            pyproj.Proj(init='EPSG:3857')), geometry)
 
-    target_epsg = osr.SpatialReference()
-    target_epsg.ImportFromEPSG(to_epsg)
-
-    transform = osr.CoordinateTransformation(source_epsg, target_epsg)
-    ogr_geom = ogr.CreateGeometryFromWkt(
-        geometry.wkt
-    )
-    ogr_geom.Transform(transform)
-    geometry = loads(ogr_geom.ExportToWkt())
-
-    return geometry
+    return geom_reprojected
