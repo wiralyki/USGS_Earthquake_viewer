@@ -2,3 +2,4 @@ geopandas==0.4.0
 grequests==0.3.0
 Shapely==1.6.4.post1
 bokeh==1.0.1
+GDAL
