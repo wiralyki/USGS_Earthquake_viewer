@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html>
+<head>
+	
+	<title>USGS Earthquake viewer</title>
+
+	<meta charset="utf-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.5.1/dist/leaflet.css" integrity="sha512-xwE/Az9zrjBIphAcBb3F6JVqxf46+CDLwfLMHloNu6KEQCAWi6HcDUbeOfBIptF7tcCzusKFjFw2yuvEpDL9wQ==" crossorigin=""/>
+    <script src="https://unpkg.com/leaflet@1.5.1/dist/leaflet.js" integrity="sha512-GffPMF3RvMeYyc1LWMHtK8EbPv0iNZ8/oTtHPx9/cc2ILxQ+u905qIwdpULaqDkyBKgOaB57QTMg7ztg8Jm2Og==" crossorigin=""></script>
+    <script src="src/leaflet-timeline-slider.js"></script>
+
+	
+</head>
+<body>
+
+
+
+<div id="mapid" style="width: 1600px; height: 900px;"></div>
+<script>
+
+	var mymap = L.map('mapid', {
+		renderer: L.canvas()
+		}).setView([46.505954, 7.108154], 6);
+
+	var background_map = L.tileLayer('https://stamen-tiles-{s}.a.ssl.fastly.net/terrain/{z}/{x}/{y}{r}.png', {
+		attribution: 'By <a href="https://github.com/yruama42/USGS_Earthquake_viewer">Yruama42</a>. Source: <a href="https://earthquake.usgs.gov/fdsnws/event/1/">USGS</a>. Map tiles by <a href="http://stamen.com">Stamen Design</a>, <a href="http://creativecommons.org/licenses/by/3.0">CC BY 3.0</a> &mdash; Map data &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+		subdomains: 'abcd',
+		minZoom: 0,
+		maxZoom: 20,
+		id: 'stamen'
+		
+	})
+	
+	background_map.addTo(mymap)
+
+	let range = (start, end) => Array.from(Array(end + 1).keys()).slice(start);
+
+	var removeMarkers = function() {
+		mymap.eachLayer(function(layer) {
+
+		if (layer.options.id != "stamen") {
+			mymap.removeLayer(layer)
+			}
+		});
+	}
+
+	function styleTemplate(radius_value, fillecolor_value) {
+		return {
+			radius: radius_value,
+			fillColor: fillecolor_value,
+			fillOpacity: 1,
+			color: 'black',
+			weight: 1
+		};
+	}
+
+	function getFillColorAndRadius(attribute) {
+		if (attribute < 4.0) {return styleTemplate(3, "#fed976")};
+		if (attribute >= 4.0 && attribute < 6.0) {return styleTemplate(6, "#feb24c")};
+		if (attribute >= 6.0 && attribute < 7.0) {return styleTemplate(9, "#fc4e2a")};
+		if (attribute >= 7.0 && attribute < 8.0) {return styleTemplate(12, "#bd0026")};
+		if (attribute >= 8.0) {return styleTemplate(15, "#7a0177")};
+	}
+
+	function marker_styling(feature, latlng) {
+				return L.circleMarker(
+					latlng,
+					getFillColorAndRadius(feature.properties.mag)
+				);
+		}
+
+
+    function marker_popup(feature, layer) {
+			content = "<b>Name:</b> " + feature.properties.title + "<br><b>magnitude:</b> " + feature.properties.mag;
+			layer.bindPopup(content);
+
+			layer.on('mouseover', function(event){
+				layer.openPopup();
+			});
+			layer.on('mouseout', function(event){
+				layer.closePopup();
+			});
+    }
+
+    function query(start_year, end_year, map) {
+
+
+			map.on('dragend', function() {
+				bbox = {
+						East: map.getBounds().getEast(),
+						North: map.getBounds().getNorth(),
+						West: map.getBounds().getWest(),
+						South: map.getBounds().getSouth()
+				}
+				})
+			console.log(bbox)
+			const http = new XMLHttpRequest()
+			http.open("GET", "https://earthquake.usgs.gov/fdsnws/event/1/query?"+ 'format=geojson' + "&starttime=" + start_year + "&endtime=" + end_year + "&minlatitude" + bbox['West'] + "&maxlatitude" + bbox['East'] + "&minlongitude" + bbox['South'] + "&maxlongitude" + bbox['North'])
+			http.send(null);
+			http.onload = function (e) {
+				if (http.status === 200 && http.readyState === 4 ) {
+				var response = JSON.parse(http.responseText);
+				L.geoJSON(
+					response['features'],
+					{
+						onEachFeature: marker_popup,
+						pointToLayer: marker_styling
+					},
+					).addTo(mymap);
+			}}
+		}
+
+    getDataAddMarkers = function({label, value, map, exclamation}) {
+			removeMarkers()
+    	var dates = []
+        for (i = 0; i < 12; i++) {
+		    var firstDate = new Date(label, i+1, 1);
+		    var lastDate = new Date(label, i+1, 0);
+
+		  		first_date_month = firstDate.getMonth()
+		        first_date_day = firstDate.getDate()
+		        first_date_year = firstDate.getFullYear()
+		 
+		        last_date_month = lastDate.getMonth() + 1
+		        last_date_day = lastDate.getDate()
+		        last_date_year = lastDate.getFullYear()
+		    dates.push([
+		      [first_date_year, first_date_month, first_date_day].join('-'),
+		      [last_date_year, last_date_month, last_date_day].join('-')
+		    ])
+		}
+		var features = []
+		for (var i in dates) {
+			values = query(dates[i][0], dates[i][1], map)
+			console.log(values)
+			features.concat(values)
+		}
+		console.log(features)
+    }
+
+	L.control.timelineSlider({
+        timelineItems: range(1980, 2019),
+        extraChangeMapParams: {greeting: "Hello World!"},
+        labelWidth: "30px",
+        labelFontSize: "10px",
+        thumbHeight: "3px",
+        betweenLabelAndRangeSpace: "10px",
+        leftBgPadding: "10px",
+        topBgPadding: "5px",
+				backgroundOpacity: "1",
+        changeMap: getDataAddMarkers
+    }
+        )
+    .addTo(mymap);
+
+</script>
+
+</body>
+</html>
