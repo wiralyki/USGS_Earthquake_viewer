@@ -102,6 +102,7 @@
 			http.onload = function (e) {
 				if (http.status === 200 && http.readyState === 4 ) {
 				var response = JSON.parse(http.responseText);
+				console.log(response['features'])
 				L.geoJSON(
 					response['features'],
 					{
