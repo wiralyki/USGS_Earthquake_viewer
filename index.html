@@ -20,7 +20,7 @@
 <div id="mapid" style="width: 1600px; height: 900px;"></div>
 <script>
 
-	var mymap = L.map('mapid', {
+    var mymap = L.map('mapid', {
 		renderer: L.canvas()
 		}).setView([46.505954, 7.108154], 6);
 
@@ -71,7 +71,6 @@
 				);
 		}
 
-
     function marker_popup(feature, layer) {
 			content = "<b>Name:</b> " + feature.properties.title + "<br><b>magnitude:</b> " + feature.properties.mag;
 			layer.bindPopup(content);
@@ -85,33 +84,31 @@
     }
 
     function query(start_year, end_year, map) {
-
-
-			map.on('dragend', function() {
-				bbox = {
-						East: map.getBounds().getEast(),
-						North: map.getBounds().getNorth(),
-						West: map.getBounds().getWest(),
-						South: map.getBounds().getSouth()
-				}
-				})
-			console.log(bbox)
-			const http = new XMLHttpRequest()
-			http.open("GET", "https://earthquake.usgs.gov/fdsnws/event/1/query?"+ 'format=geojson' + "&starttime=" + start_year + "&endtime=" + end_year + "&minlatitude" + bbox['West'] + "&maxlatitude" + bbox['East'] + "&minlongitude" + bbox['South'] + "&maxlongitude" + bbox['North'])
-			http.send(null);
-			http.onload = function (e) {
-				if (http.status === 200 && http.readyState === 4 ) {
-				var response = JSON.parse(http.responseText);
-				console.log(response['features'])
-				L.geoJSON(
-					response['features'],
-					{
-						onEachFeature: marker_popup,
-						pointToLayer: marker_styling
-					},
-					).addTo(mymap);
-			}}
-		}
+        map.on('dragend', function() {
+            bbox = {
+                    East: map.getBounds().getEast(),
+                    North: map.getBounds().getNorth(),
+                    West: map.getBounds().getWest(),
+                    South: map.getBounds().getSouth()
+            }
+            })
+        console.log(bbox)
+        const http = new XMLHttpRequest()
+        http.open("GET", "https://earthquake.usgs.gov/fdsnws/event/1/query?"+ 'format=geojson' + "&starttime=" + start_year + "&endtime=" + end_year + "&minlatitude" + bbox['West'] + "&maxlatitude" + bbox['East'] + "&minlongitude" + bbox['South'] + "&maxlongitude" + bbox['North'])
+        http.send(null);
+        http.onload = function (e) {
+            if (http.status === 200 && http.readyState === 4 ) {
+            var response = JSON.parse(http.responseText);
+            console.log(response['features'])
+            L.geoJSON(
+                response['features'],
+                {
+                    onEachFeature: marker_popup,
+                    pointToLayer: marker_styling
+                },
+                ).addTo(mymap);
+        }}
+    }
 
     getDataAddMarkers = function({label, value, map, exclamation}) {
 			removeMarkers()
@@ -150,7 +147,7 @@
         betweenLabelAndRangeSpace: "10px",
         leftBgPadding: "10px",
         topBgPadding: "5px",
-				backgroundOpacity: "1",
+		backgroundOpacity: "1",
         changeMap: getDataAddMarkers
     }
         )
