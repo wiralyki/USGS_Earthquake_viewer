@@ -34,10 +34,9 @@
 		
 	})
 
-	// Initialise the FeatureGroup to store editable layers
-  	var earthquakeLayers = new L.FeatureGroup().addTo(map);
-
 	background_map.addTo(map)
+	
+	var earthquakeLayers = new L.FeatureGroup().addTo(map);
 
 	let range = (start, end) => Array.from(Array(end + 1).keys()).slice(start);
 
@@ -50,35 +49,38 @@
 		});
 	}
 
-	// query_on_map_dragend_changes
-    function query_on_map_dragend_changes(start_year, end_year, map) {
-        map.on('dragend', function(event) {
+	function toReadableString(time) {
+	if (time < 0)
+		time = 0;
+	var hrs = ~~(time / 3600 % 24),
+		mins = ~~((time % 3600) / 60),
+		timeType = (hrs > 11 ? "PM" : "AM");
+	if (hrs > 12)
+		hrs = hrs - 12;
+	if (hrs == 0)
+		hrs = 12;
+	return hrs + ":" + padZero(mins) + timeType;
+	}
 
-			earthquakeLayers.clearLayers();
-
-            bbox = {
-                    East: map.getBounds().getEast(),
-                    North: map.getBounds().getNorth(),
-                    West: map.getBounds().getWest(),
-                    South: map.getBounds().getSouth()
-            }
-
-			console.log('aaa', bbox)
+	// get_usgs_eq_data
+    function get_usgs_eq_data(start_year, end_year, map, layersgroup) {
 			const http = new XMLHttpRequest()
-			http.open("GET", "https://earthquake.usgs.gov/fdsnws/event/1/query?"+ 'format=geojson' + "&starttime=" + start_year + "&endtime=" + end_year + "&minlatitude" + bbox['West'] + "&maxlatitude" + bbox['East'] + "&minlongitude" + bbox['South'] + "&maxlongitude" + bbox['North'])
+			http.open("GET", "https://earthquake.usgs.gov/fdsnws/event/1/query?"+ 'format=geojson' + "&starttime=" + start_year + "&endtime=" + end_year)
 			http.send(null);
 			http.onload = function (e) {
 				if (http.status === 200 && http.readyState === 4 ) {
 				var response = JSON.parse(http.responseText);
+				console.log(response)
+				layersgroup.addLayer(
 				L.geoJSON(
 					response['features'],
 					{
 						onEachFeature: marker_popup,
 						pointToLayer: marker_styling
-					},
-					).addTo(map);
+					}
+					)
+				);
 			}}
-            })
     }
 
 	function marker_styling(feature, latlng) {
@@ -91,13 +93,13 @@
 	function getFillColorAndRadius(attribute) {
 		if (attribute < 4.0) {return styleTemplate(3, "#fed976")};
 		if (attribute >= 4.0 && attribute < 6.0) {return styleTemplate(6, "#feb24c")};
-		if (attribute >= 6.0 && attribute < 7.0) {return styleTemplate(9, "#fc4e2a")};
-		if (attribute >= 7.0 && attribute < 8.0) {return styleTemplate(12, "#bd0026")};
+		if (attribute >= 6.0 && attribute < 7.0) {return styleTemplate(12, "#fc4e2a")};
+		if (attribute >= 7.0 && attribute < 8.0) {return styleTemplate(24, "#bd0026")};
 		if (attribute >= 8.0) {return styleTemplate(15, "#7a0177")};
 	}
 
     function marker_popup(feature, layer) {
-			content = "<b>Name:</b> " + feature.properties.title + "<br><b>magnitude:</b> " + feature.properties.mag;
+			content = "<b>Name:</b> " + feature.properties.title + "<br><b>magnitude:</b> " + feature.properties.mag + "<br><b>Date:</b> " + new Date(feature.properties.time);
 			layer.bindPopup(content);
 
 			layer.on('mouseover', function(event){
@@ -117,7 +119,7 @@
 			weight: 1
 		};
 	}
-	// query_on_map_dragend_changes //
+	// get_usgs_eq_data //
 
 	// Timeline interaction
     getDataAddMarkers = function({label, value, map, exclamation}) {
@@ -139,14 +141,15 @@
 		    ])
 		}
 		var features = []
-		// query data on each month between selected year and append data into features list
+
+		// clear all layers from last year
+		earthquakeLayers.clearLayers()
+
+		// query data on each month between selected year
 		for (var i in dates) {
-			console.log(dates)
-			values = query_on_map_dragend_changes(dates[i][0], dates[i][1], map)
-			console.log(values)
-			features.concat(values)
+			get_usgs_eq_data(dates[i][0], dates[i][1], map, earthquakeLayers)
 		}
-		console.log(features)
+		console.log(earthquakeLayers)
     }
 
 	L.control.timelineSlider({
