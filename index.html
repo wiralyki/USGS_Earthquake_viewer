@@ -20,9 +20,10 @@
 <div id="mapid" style="width: 1600px; height: 900px;"></div>
 <script>
 
-    var mymap = L.map('mapid', {
+    var map = L.map('mapid', {
 		renderer: L.canvas()
-		}).setView([46.505954, 7.108154], 6);
+		}
+	).setView([46.505954, 7.108154], 6);
 
 	var background_map = L.tileLayer('https://stamen-tiles-{s}.a.ssl.fastly.net/terrain/{z}/{x}/{y}{r}.png', {
 		attribution: 'By <a href="https://github.com/yruama42/USGS_Earthquake_viewer">Yruama42</a>. Source: <a href="https://earthquake.usgs.gov/fdsnws/event/1/">USGS</a>. Map tiles by <a href="http://stamen.com">Stamen Design</a>, <a href="http://creativecommons.org/licenses/by/3.0">CC BY 3.0</a> &mdash; Map data &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
@@ -32,29 +33,60 @@
 		id: 'stamen'
 		
 	})
-	
-	background_map.addTo(mymap)
+
+	// Initialise the FeatureGroup to store editable layers
+  	var earthquakeLayers = new L.FeatureGroup().addTo(map);
+
+	background_map.addTo(map)
 
 	let range = (start, end) => Array.from(Array(end + 1).keys()).slice(start);
 
 	var removeMarkers = function() {
-		mymap.eachLayer(function(layer) {
+		map.eachLayer(function(layer) {
 
 		if (layer.options.id != "stamen") {
-			mymap.removeLayer(layer)
+			map.removeLayer(layer)
 			}
 		});
 	}
 
-	function styleTemplate(radius_value, fillecolor_value) {
-		return {
-			radius: radius_value,
-			fillColor: fillecolor_value,
-			fillOpacity: 1,
-			color: 'black',
-			weight: 1
-		};
-	}
+	// query_on_map_dragend_changes
+    function query_on_map_dragend_changes(start_year, end_year, map) {
+        map.on('dragend', function(event) {
+
+			earthquakeLayers.clearLayers();
+
+            bbox = {
+                    East: map.getBounds().getEast(),
+                    North: map.getBounds().getNorth(),
+                    West: map.getBounds().getWest(),
+                    South: map.getBounds().getSouth()
+            }
+
+			console.log('aaa', bbox)
+			const http = new XMLHttpRequest()
+			http.open("GET", "https://earthquake.usgs.gov/fdsnws/event/1/query?"+ 'format=geojson' + "&starttime=" + start_year + "&endtime=" + end_year + "&minlatitude" + bbox['West'] + "&maxlatitude" + bbox['East'] + "&minlongitude" + bbox['South'] + "&maxlongitude" + bbox['North'])
+			http.send(null);
+			http.onload = function (e) {
+				if (http.status === 200 && http.readyState === 4 ) {
+				var response = JSON.parse(http.responseText);
+				L.geoJSON(
+					response['features'],
+					{
+						onEachFeature: marker_popup,
+						pointToLayer: marker_styling
+					},
+					).addTo(map);
+			}}
+            })
+    }
+
+	function marker_styling(feature, latlng) {
+				return L.circleMarker(
+					latlng,
+					getFillColorAndRadius(feature.properties.mag)
+				);
+		}
 
 	function getFillColorAndRadius(attribute) {
 		if (attribute < 4.0) {return styleTemplate(3, "#fed976")};
@@ -63,13 +95,6 @@
 		if (attribute >= 7.0 && attribute < 8.0) {return styleTemplate(12, "#bd0026")};
 		if (attribute >= 8.0) {return styleTemplate(15, "#7a0177")};
 	}
-
-	function marker_styling(feature, latlng) {
-				return L.circleMarker(
-					latlng,
-					getFillColorAndRadius(feature.properties.mag)
-				);
-		}
 
     function marker_popup(feature, layer) {
 			content = "<b>Name:</b> " + feature.properties.title + "<br><b>magnitude:</b> " + feature.properties.mag;
@@ -83,35 +108,19 @@
 			});
     }
 
-    function query(start_year, end_year, map) {
-        map.on('dragend', function() {
-            bbox = {
-                    East: map.getBounds().getEast(),
-                    North: map.getBounds().getNorth(),
-                    West: map.getBounds().getWest(),
-                    South: map.getBounds().getSouth()
-            }
-            })
-        console.log(bbox)
-        const http = new XMLHttpRequest()
-        http.open("GET", "https://earthquake.usgs.gov/fdsnws/event/1/query?"+ 'format=geojson' + "&starttime=" + start_year + "&endtime=" + end_year + "&minlatitude" + bbox['West'] + "&maxlatitude" + bbox['East'] + "&minlongitude" + bbox['South'] + "&maxlongitude" + bbox['North'])
-        http.send(null);
-        http.onload = function (e) {
-            if (http.status === 200 && http.readyState === 4 ) {
-            var response = JSON.parse(http.responseText);
-            console.log(response['features'])
-            L.geoJSON(
-                response['features'],
-                {
-                    onEachFeature: marker_popup,
-                    pointToLayer: marker_styling
-                },
-                ).addTo(mymap);
-        }}
-    }
+	function styleTemplate(radius_value, fillecolor_value) {
+		return {
+			radius: radius_value,
+			fillColor: fillecolor_value,
+			fillOpacity: 1,
+			color: 'black',
+			weight: 1
+		};
+	}
+	// query_on_map_dragend_changes //
 
+	// Timeline interaction
     getDataAddMarkers = function({label, value, map, exclamation}) {
-			removeMarkers()
     	var dates = []
         for (i = 0; i < 12; i++) {
 		    var firstDate = new Date(label, i+1, 1);
@@ -130,8 +139,10 @@
 		    ])
 		}
 		var features = []
+		// query data on each month between selected year and append data into features list
 		for (var i in dates) {
-			values = query(dates[i][0], dates[i][1], map)
+			console.log(dates)
+			values = query_on_map_dragend_changes(dates[i][0], dates[i][1], map)
 			console.log(values)
 			features.concat(values)
 		}
@@ -140,7 +151,7 @@
 
 	L.control.timelineSlider({
         timelineItems: range(1980, 2019),
-        extraChangeMapParams: {greeting: "Hello World!"},
+        extraChangeMapParams: {},
         labelWidth: "30px",
         labelFontSize: "10px",
         thumbHeight: "3px",
@@ -151,7 +162,8 @@
         changeMap: getDataAddMarkers
     }
         )
-    .addTo(mymap);
+    .addTo(map);
+	// Timeline interaction //
 
 </script>
 
