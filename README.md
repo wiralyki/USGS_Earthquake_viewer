@@ -21,10 +21,10 @@ Go to [USGS Earthquake Viewer](https://earthquakeviewer.herokuapp.com/main) on H
 in your terminal Anaconda Prompt
 ```
 conda create --name usgs_earthquake python=3.6 
+activate usgs_earthquake
 conda config --add channels conda-forge
 conda config --set channel_priority strict
 conda install --file requirements.txt
-activate usgs_earthquake
 ```
 
 ### run it
