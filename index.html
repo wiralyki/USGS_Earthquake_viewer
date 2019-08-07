@@ -91,11 +91,11 @@
 		}
 
 	function getFillColorAndRadius(attribute) {
-		if (attribute < 4.0) {return styleTemplate(3, "#fed976")};
-		if (attribute >= 4.0 && attribute < 6.0) {return styleTemplate(6, "#feb24c")};
-		if (attribute >= 6.0 && attribute < 7.0) {return styleTemplate(12, "#fc4e2a")};
-		if (attribute >= 7.0 && attribute < 8.0) {return styleTemplate(24, "#bd0026")};
-		if (attribute >= 8.0) {return styleTemplate(15, "#7a0177")};
+		if (attribute < 3) {return styleTemplate(3, "#abdda4")};
+		if (attribute >= 3.0 && attribute < 4.0) {return styleTemplate(5, "#fee08b")};
+		if (attribute >= 4.0 && attribute < 5.0) {return styleTemplate(10, "#fdae61")};
+		if (attribute >= 5.0 && attribute < 6.0) {return styleTemplate(18, "#f46d43")};
+		if (attribute >= 6.0) {return styleTemplate(34, "#9e0142")};
 	}
 
     function marker_popup(feature, layer) {
@@ -167,6 +167,73 @@
         )
     .addTo(map);
 	// Timeline interaction //
+
+	var legend = L.control({position: 'bottomleft'});
+		legend.onAdd = function (map) {
+
+		var legend_div = L.DomUtil.create('div', 'legend');
+		var categories = magColor()
+
+		var start_y_pos = 40
+		var y_pos_increment = 30
+
+		// count_categories to compute legend heigh
+		const categories_prop = Object.getOwnPropertyNames(categories);
+		var cat_count = categories_prop.length
+		var legend_heigh = start_y_pos + (y_pos_increment * cat_count)
+		console.log(legend_heigh)
+		legend_svg = `
+			<svg width="160" height="`+  legend_heigh +`">
+			<polygon points="0,0 160,0 160,`+  legend_heigh +` 0,`+  legend_heigh +` 0,0" fill="white" />
+			<text x="5" y="20" font-weight="bold">Magnitude</text>
+		`
+
+
+		for(var cat in categories) {
+			var values = categories[cat];
+			console.log(values)
+			var color = values['color']
+			var size = values['size']
+			legend_svg += `
+				<circle cx="20" cy="`+  start_y_pos +`" r="`+  size +`" stroke="black" stroke-width="0.5" fill="`+  color +`" />
+				<text x="40" y="`+  start_y_pos +`" transform="translate(8,4)">`+  cat +`</text>
+			`
+			console.log(legend_svg)
+			start_y_pos += 30
+		}
+
+		console.log(legend_svg)
+		legend_div.innerHTML = legend_svg;
+		return legend_div;
+		};
+		legend.addTo(map);
+
+	function magColor() {
+		return {
+			'Small': {
+				"color": "#abdda4", 
+				"size": 3
+			},
+			'Moderate': {
+				"color": "#fee08b", 
+				"size": 5
+			},
+			'Major': {
+				"color": "#fdae61", 
+				"size": 10
+			},
+			'Great': {
+				"color": "#f46d43", 
+				"size": 14
+			},
+			'Super': {
+				"color": "#9e0142", 
+				"size": 20
+			}
+		}
+	}
+
+
 
 </script>
 
