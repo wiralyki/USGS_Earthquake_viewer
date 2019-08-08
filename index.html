@@ -8,7 +8,6 @@
 	<meta name="viewport" content="width=device-width, initial-scale=1.0">
 	
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.5.1/dist/leaflet.css" integrity="sha512-xwE/Az9zrjBIphAcBb3F6JVqxf46+CDLwfLMHloNu6KEQCAWi6HcDUbeOfBIptF7tcCzusKFjFw2yuvEpDL9wQ==" crossorigin=""/>
-    <link rel="stylesheet" src="css/general.css"></link>
 
 	<script src="https://unpkg.com/leaflet@1.5.1/dist/leaflet.js" integrity="sha512-GffPMF3RvMeYyc1LWMHtK8EbPv0iNZ8/oTtHPx9/cc2ILxQ+u905qIwdpULaqDkyBKgOaB57QTMg7ztg8Jm2Og==" crossorigin=""></script>
     <script src="src/leaflet-timeline-slider.js"></script>
@@ -38,7 +37,6 @@
 
 	background_map.addTo(map)
 	
-	var earthquakeLayers = new L.FeatureGroup().addTo(map);
 	var earthquakeLayersCl1 = new L.FeatureGroup().addTo(map);
 	var earthquakeLayersCl2 = new L.FeatureGroup().addTo(map);
 	var earthquakeLayersCl3 = new L.FeatureGroup().addTo(map);
@@ -58,19 +56,6 @@
 	}
 
 	var magContentsValues = magContents()
-
-	function toReadableString(time) {
-	if (time < 0)
-		time = 0;
-	var hrs = ~~(time / 3600 % 24),
-		mins = ~~((time % 3600) / 60),
-		timeType = (hrs > 11 ? "PM" : "AM");
-	if (hrs > 12)
-		hrs = hrs - 12;
-	if (hrs == 0)
-		hrs = 12;
-	return hrs + ":" + padZero(mins) + timeType;
-	}
 
 	// get_usgs_eq_data
     function get_usgs_eq_data(start_year, end_year, map, layersgroup) {
