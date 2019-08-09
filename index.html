@@ -57,8 +57,52 @@
 
 	var magContentsValues = magContents()
 
+
+	var legend = L.control({position: 'bottomleft'});
+	legend.onAdd = function (map) {
+
+		var legend_div = L.DomUtil.create('div', 'legend');
+
+		var start_y_pos = 40
+		var y_pos_increment = 30
+
+		// count_categories to compute legend heigh
+		const categories_prop = Object.getOwnPropertyNames(magContentsValues);
+		var cat_count = categories_prop.length
+		var legend_heigh = start_y_pos + (y_pos_increment * cat_count) + 10
+
+		legend_svg = `
+			<svg id="svgLegend" width="160" height="`+ legend_heigh +`">
+			<polygon points="0,0 160,0 160,`+  legend_heigh +` 0,`+  legend_heigh +` 0,0" fill="white" />
+			<text x="5" y="20" font-weight="bold">Magnitude</text>
+		`
+
+		for(var cat in magContentsValues) {
+			var values = magContentsValues[cat];
+			console.log(values)
+			var color = values['color']
+			var size = values['size']
+			var fontWeight = values['font-weight']
+			legend_svg += `
+				<circle cx="40" cy="`+  start_y_pos +`" r="`+  size +`" stroke="black" stroke-width="0.5" fill="`+  color +`" />
+				<text class="legend_pointer" id="`+  cat +`" font-weight="bold" onclick='highlightedModeSelecting("`+  cat +`")' x="70" y="`+  start_y_pos +`" transform="translate(8,4)">`+  cat +`</text>
+			`
+			start_y_pos += 30
+		}
+
+		legend_div.innerHTML = legend_svg;
+		return legend_div;
+	};
+	legend.addTo(map);
+
+
+
 	// get_usgs_eq_data
     function get_usgs_eq_data(start_year, end_year, map, layersgroup) {
+
+		// load data on his layer group
+		var magIntervals = magContents()
+
 		const http = new XMLHttpRequest()
 		http.open("GET", "https://earthquake.usgs.gov/fdsnws/event/1/query?"+ 'format=geojson' + "&starttime=" + start_year + "&endtime=" + end_year)
 		http.send(null);
@@ -67,35 +111,36 @@
 				var response = JSON.parse(http.responseText);
 				console.log(response)
 
-				// load data on his layer group
-				var magIntervals = magContents()
 				response['features'].forEach(function (feature, _) {
 					
-					for (var key in magIntervals) {
+					for (var category in magIntervals) {
 
-						var category = key
-						var values = magIntervals[key]
+						var values = magIntervals[category]
 
 						if (feature.properties.mag >= values['intervals'][0] && feature.properties.mag < values['intervals'][1]) {
-							values['grouplayer'].addLayer(
-								L.geoJSON(
-									[feature],
-									{
-										onEachFeature: marker_popup,
-										pointToLayer: function(feature, latlng) {
-											return L.circleMarker(
-												latlng,
-												styleTemplate(values['size'], values['color'])
-											)								
-										}
+
+							featuresPrepared = L.geoJSON(
+								[feature],
+								{
+									onEachFeature: marker_popup,
+									pointToLayer: function(feature, latlng) {
+										return L.circleMarker(
+											latlng,
+											styleTemplate(values['size'], values['color'], values['fillOpacity'], values['opacity'])
+										)								
 									}
-								)
+								}
 							)
-						}
-					}
+							values['grouplayer'].addLayer(featuresPrepared)
+						};
+					};				
 				})
+
 			}
+				//check legend selections
+				highlightedModechecking()
 		}
+
 	}
 
     function marker_popup(feature, layer) {
@@ -114,11 +159,12 @@
 			});
     }
 
-	function styleTemplate(radius_value, fillecolor_value) {
+	function styleTemplate(radius_value, fillecolor_value, fillOpacity_value, opacity_value) {
 		return {
 			radius: radius_value,
 			fillColor: fillecolor_value,
-			fillOpacity: 1,
+			opacity: opacity_value,
+			fillOpacity: opacity_value,
 			color: 'black',
 			weight: 1
 		};
@@ -144,7 +190,6 @@
 		      [last_date_year, last_date_month, last_date_day].join('-')
 		    ])
 		}
-		var features = []
 
 		// clear all layers from last year
 		//earthquakeLayers.clearLayers()
@@ -162,13 +207,13 @@
 			"Strong": earthquakeLayersCl4,
 			"Major": earthquakeLayersCl5,
 			"Great": earthquakeLayersCl6,
-	}
+		}
 
 		// query data on each month between selected year
+
 		for (var i in dates) {
 			get_usgs_eq_data(dates[i][0], dates[i][1], map, layerGroups)
 		}
-		console.log(earthquakeLayers)
     }
 
 	L.control.timelineSlider({
@@ -187,99 +232,101 @@
     .addTo(map);
 	// Timeline interaction //
 
-	var legend = L.control({position: 'bottomleft'});
-	legend.onAdd = function (map) {
-
-		var legend_div = L.DomUtil.create('div', 'legend');
-		//var categories = magContents()
-
-		var start_y_pos = 40
-		var y_pos_increment = 30
-
-		// count_categories to compute legend heigh
-		const categories_prop = Object.getOwnPropertyNames(magContentsValues);
-		var cat_count = categories_prop.length
-		var legend_heigh = start_y_pos + (y_pos_increment * cat_count) + 10
-
-		legend_svg = `
-			<svg id="svgLegend" width="160" height="`+ legend_heigh +`">
-			<polygon points="0,0 160,0 160,`+  legend_heigh +` 0,`+  legend_heigh +` 0,0" fill="white" />
-			<text x="5" y="20" font-weight="bold">Magnitude</text>
-		`
-
-		for(var cat in magContentsValues) {
-			var values = magContentsValues[cat];
-			console.log(values)
-			var color = values['color']
-			var size = values['size']
-			legend_svg += `
-				<circle cx="40" cy="`+  start_y_pos +`" r="`+  size +`" stroke="black" stroke-width="0.5" fill="`+  color +`" />
-				<text class="legend_pointer" id="`+  cat +`" font-weight="bold" onclick='highlightedMode(`+  cat +`)' x="70" y="`+  start_y_pos +`" transform="translate(8,4)">`+  cat +`</text>
-			`
-			start_y_pos += 30
-		}
-
-		console.log(legend_svg)
-		legend_div.innerHTML = legend_svg;
-		return legend_div;
-	};
-	legend.addTo(map);
-
 	function magContents() {
 		
 		return {
 			'Minor': {
 				"color": "#d9ef8b", 
 				"size": 3,
+				"font-weight": "bold",
+				"fillOpacity":1,
+				"opacity":1,
 				"intervals": [0, 4.0],
 				"grouplayer": earthquakeLayersCl1
 			},
 			'Light': {
 				"color": "#fee08b", 
 				"size": 5,
+				"font-weight": "bold",
+				"fillOpacity":1,
+				"opacity":1,
 				"intervals": [4.0, 5.0],
 				"grouplayer": earthquakeLayersCl2
 			},
 			'Moderate': {
 				"color": "#fdae61", 
 				"size": 9,
+				"font-weight": "bold",
+				"fillOpacity":1,
+				"opacity":1,
 				"intervals": [5.0, 6.0],
 				"grouplayer": earthquakeLayersCl3
 			},
 			'Strong': {
 				"color": "#f46d43", 
 				"size": 15,
+				"font-weight": "bold",
+				"fillOpacity":1,
+				"opacity":1,
 				"intervals": [6.0, 7.0],
 				"grouplayer": earthquakeLayersCl4
 			},
 			'Major': {
 				"color": "#d73027", 
 				"size": 23,
+				"font-weight": "bold",
+				"fillOpacity":1,
+				"opacity":1,
 				"intervals": [7.0, 8.0],
 				"grouplayer": earthquakeLayersCl5
 			},
 			'Great': {
 				"color": "#a50026", 
 				"size": 33,
+				"font-weight": "bold",
+				"fillOpacity":1,
+				"opacity":1,
 				"intervals": [8.0, 9999.0],
 				"grouplayer": earthquakeLayersCl6
 			}
 		}
 	}
 
-	function highlightedMode(category) {
-		if (category.getAttribute("font-weight") == "bold") {
-			category.setAttribute("font-weight", "normal");
-			
-			magContentsValues[category.getAttribute("id")]["grouplayer"].setStyle({fillOpacity:0,opacity:0})
+	function highlightedModeSelecting(category) {
+		var textSvgCategory = document.getElementById("svgLegend").getElementById(category)
+
+		groupLayerSelected = magContentsValues[category]["grouplayer"]
+
+		if (textSvgCategory.getAttribute("font-weight") == "bold") {
+
+			textSvgCategory.setAttribute("font-weight", "normal");
+			groupLayerSelected.setStyle({fillOpacity:0,opacity:0})
 
 		} else {
-			category.setAttribute("font-weight", "bold");
-			magContentsValues[category.getAttribute("id")]["grouplayer"].setStyle({fillOpacity:1,opacity:1})
+			textSvgCategory.setAttribute("font-weight", "bold");
+			groupLayerSelected.setStyle({fillOpacity:1,opacity:1})
 
 		}
 	}
 
+	function highlightedModechecking () {
+		console.log('test')
+		var magIntervals = magContents()
+		for (var category in magIntervals) {
+
+			var textSvgCategory = document.getElementById("svgLegend").getElementById(category)
+
+			groupLayerSelected = magContentsValues[category]["grouplayer"]
+
+			if (textSvgCategory.getAttribute("font-weight") == "bold") {
+				groupLayerSelected.setStyle({fillOpacity:1,opacity:1})
+
+			} else {
+
+				groupLayerSelected.setStyle({fillOpacity:0,opacity:0})
+			}
+		}
+	}
 
 </script>
 
