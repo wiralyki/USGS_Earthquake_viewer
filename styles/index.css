@@ -1,0 +1,15 @@
+#map {
+  width: 800px;
+  height: 600px;
+  position: absolute;
+}
+
+#legend {
+  width: 100%;
+  height: 100%;
+}
+
+.slidecontainer {
+  width: 100%; /* Width of the outside container */
+}
+
