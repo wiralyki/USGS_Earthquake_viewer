@@ -1,18 +1,18 @@
-var map = L.map('map', {
-    renderer: L.canvas()
-    }
-).setView([46.505954, 7.108154], 6);
 
-var background_map = L.tileLayer('https://stamen-tiles-{s}.a.ssl.fastly.net/terrain/{z}/{x}/{y}{r}.png', {
+var background_map = L.tileLayer('https://stamen-tiles-{s}.a.ssl.fastly.net/terrain-background/{z}/{x}/{y}.png', {
     attribution: 'By <a href="https://github.com/yruama42/USGS_Earthquake_viewer">Yruama42</a>. Source: <a href="https://earthquake.usgs.gov/fdsnws/event/1/">USGS</a>. Map tiles by <a href="http://stamen.com">Stamen Design</a>, <a href="http://creativecommons.org/licenses/by/3.0">CC BY 3.0</a> &mdash; Map data &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
-    subdomains: 'abcd',
     minZoom: 0,
     maxZoom: 20,
-    id: 'stamen'
+});
 
-})
-
-background_map.addTo(map)
+var map = L.map(
+    'map',
+    {
+        preferCanvas: true,
+        renderer: L.canvas()
+    }
+).addLayer(background_map).setView([44.896741, 4.932861], 6)
+setTimeout(function () { map.invalidateSize() }, 800);
 
 var earthquakeLayersCl1 = new L.FeatureGroup().addTo(map);
 var earthquakeLayersCl2 = new L.FeatureGroup().addTo(map);
@@ -21,90 +21,89 @@ var earthquakeLayersCl4 = new L.FeatureGroup().addTo(map);
 var earthquakeLayersCl5 = new L.FeatureGroup().addTo(map);
 var earthquakeLayersCl6 = new L.FeatureGroup().addTo(map);
 
-let range = (start, end) => Array.from(Array(end + 1).keys()).slice(start);
-
-var removeMarkers = function() {
-    map.eachLayer(function(layer) {
-
-    if (layer.options.id != "stamen") {
-        map.removeLayer(layer)
-        }
-    });
-}
-
 var magContentsValues = magContents()
 
+// legend
+var legend_div = document.createElement('div');
+legend_div.setAttribute("id", "legend");
+legend_div.setAttribute("class","legend-container row")
 
-// var legend = L.control({position: 'topright'});
-// legend.onAdd = function (map) {
+for (var cat in magContentsValues) {
+    var values = magContentsValues[cat];
+    var color = values['color']
+    var size = values['size']
+    var font_weight = values['font-weight']
 
-    var legend_div = document.createElement('div');
-    legend_div.setAttribute("id", "legend");
-    legend_div.setAttribute("class","legend-container col-sm-4")
+    var legend_item_symb = document.createElement('div');
+    legend_item_symb.setAttribute("class","legend-item-symb col-sm-6")
+    var legend_item_svg = create_circle(size, size, "svg" + cat, {"fill": color})
+    legend_item_symb.append(legend_item_svg)
 
-    var start_y_pos = 40
-    var y_pos_increment = 30
+    var legend_item_value = document.createElement('div');
+    legend_item_value.setAttribute("class","legend-item-value col-sm-6")
+    legend_item_value.setAttribute("id", cat);
+    var value_item = document.createElement("a");
+    legend_item_value.setAttribute("style", "font-weight:" + font_weight);
 
-    // count_categories to compute legend heigh
-    const categories_prop = Object.getOwnPropertyNames(magContentsValues);
-    var cat_count = categories_prop.length
-    var legend_heigh = start_y_pos + (y_pos_increment * cat_count) + 10
 
-    var legend_svg = `
-        <svg id="svgLegend" width="160" height="${legend_heigh}">
-        <polygon points="0,0 160,0 160,${legend_heigh} 0,${legend_heigh} 0,0" fill="white" />
-        <text x="5" y="20" font-weight="bold">Magnitude</text>
-    `
+    value_item.innerHTML = cat
+    legend_item_value.append(value_item)
 
-    for (var cat in magContentsValues) {
-        var values = magContentsValues[cat];
-        var color = values['color']
-        var size = values['size']
-        var fontWeight = values['font-weight']
-        legend_svg += `
-            <circle cx="40" cy="`+  start_y_pos +`" r="`+  size +`" stroke="black" stroke-width="0.5" fill="`+  color +`" />
-            <text class="legend_pointer" id="`+  cat +`" font-weight="bold" onclick='highlightedModeSelecting("`+  cat +`")' x="70" y="`+  start_y_pos +`" transform="translate(8,4)">`+  cat +`</text>
-        `
-        start_y_pos += 30
+    legend_div.append(legend_item_symb)
+    legend_div.append(legend_item_value)
+}
+$('#side-bar').append(legend_div)
+
+
+
+function create_circle(width, height, id_name, style) {
+    var svgNS = "http://www.w3.org/2000/svg";
+    var divis = 2
+
+    var svg = document.createElementNS(svgNS,'svg');
+    svg.setAttribute("id", id_name)
+    svg.setAttribute("height", height)
+    svg.setAttribute("width", width)
+
+
+    var svg_item = document.createElementNS(svgNS,"circle");
+
+    svg_item.setAttributeNS(null,"cx"    , width / divis);
+    svg_item.setAttributeNS(null,"cy"    , height / divis);
+    svg_item.setAttributeNS(null,"r"     , width > height ? height / divis : width / divis);
+    for (var property in style) {
+        svg_item.setAttributeNS(null, property, style[property]);
     }
+    svg.append(svg_item);
 
+    return svg
+}
 
-
-    legend_div.innerHTML = legend_svg;
-    $('#content').append(legend_div)
-    // document.body.appendChild(legend_div);
-
-    // return legend_div;
-// };
-// legend.addTo(map);
 
 
 
 // get_usgs_eq_data
-function get_usgs_eq_data(start_year, end_year, layersgroup) {
+function get_usgs_eq_data(start_year, end_year) {
 
     // load data on his layer group
     var magIntervals = magContents()
 
     const http = new XMLHttpRequest()
-    console.log(map.getBounds().getSouth())
-    http.open("GET", "https://earthquake.usgs.gov/fdsnws/event/1/query?"+ 'format=geojson' + "&starttime=" + start_year + "&endtime=" + end_year +     "&minlatitude=" + map.getBounds().getSouth() + "&maxlatitude=" + map.getBounds().getNorth() + "&minlongitude=" + map.getBounds().getWest() + "&maxlongitude=" + map.getBounds().getEast())
-
+    http.open(
+        "GET",
+        "https://earthquake.usgs.gov/fdsnws/event/1/query?"+ 'format=geojson' + "&starttime=" + start_year + "&endtime=" + end_year +  "&minlatitude=" + map.getBounds().getSouth() + "&maxlatitude=" + map.getBounds().getNorth() + "&minlongitude=" + map.getBounds().getWest() + "&maxlongitude=" + map.getBounds().getEast(),
+    )
     http.send(null);
     http.onload = function (e) {
         if (http.status === 200 && http.readyState === 4 ) {
             var response = JSON.parse(http.responseText);
-            console.log(response)
 
             response['features'].forEach(function (feature, _) {
 
                 for (var category in magIntervals) {
-
                     var values = magIntervals[category]
-
                     if (feature.properties.mag >= values['intervals'][0] && feature.properties.mag < values['intervals'][1]) {
-
-                        featuresPrepared = L.geoJSON(
+                        featuresPrepared = L.geoJson(
                             [feature],
                             {
                                 onEachFeature: marker_popup,
@@ -120,10 +119,9 @@ function get_usgs_eq_data(start_year, end_year, layersgroup) {
                     };
                 };
             })
-
         }
-            //check legend selections
-            highlightedModechecking()
+        //check legend selections
+        highlightedModechecking()
     }
 
 }
@@ -154,7 +152,6 @@ function styleTemplate(radius_value, fillecolor_value, fillOpacity_value, opacit
         weight: 1
     };
 }
-// get_usgs_eq_data //
 
 // Timeline interaction
 getDataAddMarkers = function(label, map) {
@@ -162,23 +159,14 @@ getDataAddMarkers = function(label, map) {
     for (i = 0; i < 12; i++) {
         var firstDate = new Date(label, i+1, 1);
         var lastDate = new Date(label, i+1, 0);
-        console.log("aaaa", label)
 
-            first_date_month = firstDate.getMonth()
-            first_date_day = firstDate.getDate()
-            first_date_year = firstDate.getFullYear()
-
-            last_date_month = lastDate.getMonth() + 1
-            last_date_day = lastDate.getDate()
-            last_date_year = lastDate.getFullYear()
         dates.push([
-          [first_date_year, first_date_month, first_date_day].join('-'),
-          [last_date_year, last_date_month, last_date_day].join('-')
+          [firstDate.getFullYear(), firstDate.getMonth(), firstDate.getDate()].join('-'),
+          [lastDate.getFullYear(), lastDate.getMonth() + 1, lastDate.getDate()].join('-')
         ])
     }
 
     // clear all layers from last year
-    //earthquakeLayers.clearLayers()
     earthquakeLayersCl1.clearLayers()
     earthquakeLayersCl2.clearLayers()
     earthquakeLayersCl3.clearLayers()
@@ -207,7 +195,7 @@ function magContents() {
     return {
         'Minor': {
             "color": "#d9ef8b",
-            "size": 3,
+            "size": 6,
             "font-weight": "bold",
             "fillOpacity":1,
             "opacity":1,
@@ -216,7 +204,7 @@ function magContents() {
         },
         'Light': {
             "color": "#fee08b",
-            "size": 5,
+            "size": 10,
             "font-weight": "bold",
             "fillOpacity":1,
             "opacity":1,
@@ -225,7 +213,7 @@ function magContents() {
         },
         'Moderate': {
             "color": "#fdae61",
-            "size": 9,
+            "size": 18,
             "font-weight": "bold",
             "fillOpacity":1,
             "opacity":1,
@@ -234,7 +222,7 @@ function magContents() {
         },
         'Strong': {
             "color": "#f46d43",
-            "size": 15,
+            "size": 30,
             "font-weight": "bold",
             "fillOpacity":1,
             "opacity":1,
@@ -243,7 +231,7 @@ function magContents() {
         },
         'Major': {
             "color": "#d73027",
-            "size": 23,
+            "size": 46,
             "font-weight": "bold",
             "fillOpacity":1,
             "opacity":1,
@@ -252,7 +240,7 @@ function magContents() {
         },
         'Great': {
             "color": "#a50026",
-            "size": 33,
+            "size": 66,
             "font-weight": "bold",
             "fillOpacity":1,
             "opacity":1,
@@ -262,33 +250,32 @@ function magContents() {
     }
 }
 
-function highlightedModeSelecting(category) {
-    var textSvgCategory = document.getElementById("svgLegend").getElementById(category)
-
-    groupLayerSelected = magContentsValues[category]["grouplayer"]
-
-    if (textSvgCategory.getAttribute("font-weight") == "bold") {
-
-        textSvgCategory.setAttribute("font-weight", "normal");
-        groupLayerSelected.setStyle({fillOpacity:0,opacity:0})
-
-    } else {
-        textSvgCategory.setAttribute("font-weight", "bold");
-        groupLayerSelected.setStyle({fillOpacity:1,opacity:1})
-
-    }
-}
+$(document).ready(function() {
+    $(".legend-item-value").click(function(){
+        // console.log(this.id)
+        // highlightedModeSelecting(this.id)
+        var textSvgCategory = $("#" + this.id)
+        groupLayerSelected = magContentsValues[this.id]["grouplayer"]
+        console.log(textSvgCategory.css("font-weight"))
+        if (textSvgCategory.css("font-weight") == 700) {
+            textSvgCategory.css("font-weight", "normal");
+        } else {
+            textSvgCategory.css("font-weight", "bold");
+        }
+        highlightedModechecking()
+    });
+});
 
 function highlightedModechecking () {
-    console.log('test')
     var magIntervals = magContents()
     for (var category in magIntervals) {
 
-        var textSvgCategory = document.getElementById("svgLegend").getElementById(category)
+        var textSvgCategory = $("#" + category)
 
         groupLayerSelected = magContentsValues[category]["grouplayer"]
 
-        if (textSvgCategory.getAttribute("font-weight") == "bold") {
+        if (textSvgCategory.css("font-weight") == 700) {
+
             groupLayerSelected.setStyle({fillOpacity:1,opacity:1})
 
         } else {
@@ -299,22 +286,24 @@ function highlightedModechecking () {
 }
 
 // slider processing
-
 var slider = document.getElementById("mySlider");
 slider.max = 2020
 slider.min = 1980
 // slider.value = 2000
 
 
-var output = document.getElementById("demo");
+
 // output.innerHTML = slider.value; // Display the default slider value
 
 // Update the current slider value (each time you drag the slider handle)
 slider.oninput = function() {
-  // output.innerHTML = this.value;
+    var output = $("slider-value");
+
+  $("#slider-value").text(this.value);
   getDataAddMarkers(this.value, "value", map, "exclamation")
 }
 
 map.on("moveend", function(s){
     getDataAddMarkers(slider.value, "value", map, "exclamation");
 });
+
