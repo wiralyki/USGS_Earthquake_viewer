@@ -1,4 +1,3 @@
-
 var background_map = L.tileLayer('https://stamen-tiles-{s}.a.ssl.fastly.net/terrain-background/{z}/{x}/{y}.png', {
     attribution: 'By <a href="https://github.com/yruama42/USGS_Earthquake_viewer">Yruama42</a>. Source: <a href="https://earthquake.usgs.gov/fdsnws/event/1/">USGS</a>. Map tiles by <a href="http://stamen.com">Stamen Design</a>, <a href="http://creativecommons.org/licenses/by/3.0">CC BY 3.0</a> &mdash; Map data &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
     minZoom: 0,
@@ -14,240 +13,248 @@ var map = L.map(
 ).addLayer(background_map).setView([44.896741, 4.932861], 6)
 setTimeout(function () { map.invalidateSize() }, 800);
 
-var earthquakeLayersCl1 = new L.FeatureGroup().addTo(map);
-var earthquakeLayersCl2 = new L.FeatureGroup().addTo(map);
-var earthquakeLayersCl3 = new L.FeatureGroup().addTo(map);
-var earthquakeLayersCl4 = new L.FeatureGroup().addTo(map);
-var earthquakeLayersCl5 = new L.FeatureGroup().addTo(map);
-var earthquakeLayersCl6 = new L.FeatureGroup().addTo(map);
 
-var magContentsValues = magContents()
+/* Initialize the SVG layer */
+var svgLayer = L.svg();
+svgLayer.addTo(map);
+
+var chart_data = []
+var chart_data_grouped = []
+
+function get_data_from_usgs(start_date, end_date) {
+    var url_build = `https://earthquake.usgs.gov/fdsnws/event/1/query?format=geojson&starttime=${start_date}&endtime=${end_date}&minlatitude=${map.getBounds().getSouth()}&maxlatitude=${map.getBounds().getNorth()}&minlongitude=${map.getBounds().getWest()}&maxlongitude=${map.getBounds().getEast()}`;
+
+    const http = new XMLHttpRequest()
+    http.open(
+        "GET",
+        url_build,
+    )
+    http.send(null);
+    http.onload = function (e) {
+        if (http.status === 200 && http.readyState === 4) {
+            var data = JSON.parse(http.responseText)["features"];
+
+            data.forEach(function (d, i) {
+                d.LatLng = new L.LatLng(
+                    d.geometry.coordinates[1],
+                    d.geometry.coordinates[0]
+                )
+            })
+
+            data.forEach(function (d, i) {
+                d.title = set_svg_attr(d)["class"]
+            })
+
+            data.forEach(function (d, i) {
+                d.r = set_svg_attr(d)["r"]
+            })
+
+            data.forEach(function (d, i) {
+                d.place = d.properties.place
+            })
+
+
+            chart_data = $.merge(chart_data, data)
+
+            let data_grouped = data.reduce((data, item) => {
+                data[item.title] = data[item.title] || [];
+                data[item.title].push(item);
+                return data;
+            }, {});
+
+            // order svg group
+            var svg = d3.select("#map").select("svg")
+            for (var title in magContents()) {
+                var g = svg.append("g")
+                g.attr("class", title)
+            }
+
+            for (var title in data_grouped) {
+                var data_group = data_grouped[title]
+
+                var g = svg.select("." + title);
+                var _ = g.selectAll("LatLng")
+                    .data(data_group)
+                    .enter().append("circle")
+                    .attr("r", function (d, i) {
+                        return set_svg_attr(d)["r"];
+                    })
+                    .attr("transform", function (d, i) {
+                        return transform_coords(d);
+                    })
+
+                var time_between_each_object = 100;
+                var fade_speed = 1000;
+                $("svg").find("g").each(function (i, path) {
+                    $(path).delay(time_between_each_object * i).fadeIn(fade_speed, function () {
+
+                    });
+                })
+            }
+
+        }
+        return true
+    }
+}
+
+
+// d3.selectAll("circle").on("mouseover", function(){
+//     d3.select(this).raise();
+// });
+
+// var chart_data_grouped = []
+// Timeline interaction
+
+function getData(dates) {
+    return new Promise(resolve => {
+        for (var i in dates) {
+            get_data_from_usgs(dates[i][0], dates[i][1]);
+        }
+        resolve(true)
+
+    })
+}
+
+function getDataAddMarkers(label) {
+    var dates = []
+    for (i = 0; i < 12; i++) {
+
+        var firstDate = new Date(label, i);
+        var nextFirstDateMonth = new Date(label, i + 1);
+        var lastDate = new Date(nextFirstDateMonth - 1);
+
+        dates.push([
+            [firstDate.getFullYear(), firstDate.getMonth() + 1, firstDate.getDate()].join('-'),
+            [lastDate.getFullYear(), lastDate.getMonth() + 1, lastDate.getDate()].join('-')
+        ])
+    }
+    // query data on each month between selected year
+    // for (var i in dates) {
+    //     get_data_from_usgs(dates[i][0], dates[i][1]);
+    // }
+    getData(dates).then(function (e) {
+        chart_data_grouped = chart_data.reduce((feature, {place, title}) => {
+            feature[place] = feature[place] || {place, title, count: 0};
+            feature[place].count += 1;
+            return feature;
+        }, {})
+        console.log(chart_data_grouped);
+    })
+}
+
+
+
+
+
+
+
+
+console.log(chart_data)
+
+
+
+function transform_coords(d) {
+    var coor = map.latLngToLayerPoint(d.LatLng);
+       return "translate(" +
+           coor.x + "," +
+           coor.y + ")";
+}
+
+function set_svg_attr(feature) {
+    for (var title in magContents()){
+
+        var interval_values = magContents()[title].interval
+        if (feature.properties.mag >= interval_values[0] && feature.properties.mag < interval_values[1])
+            return {"class": title, "r": magContents()[title].r}
+
+     }
+}
+
+
+function magContents() {
+
+    return {
+        'great': {
+            "r": 66,
+            "interval": [8, 9999]
+        },
+        'major': {
+            "r": 46,
+            "interval": [7, 8]
+        },
+        'strong': {
+            "r": 30,
+            "interval": [6, 7]
+        },
+        'moderate': {
+            "r": 18,
+            "interval": [5, 6]
+        },
+        'light': {
+            "r": 10,
+            "interval": [4, 5]
+        },
+        'minor': {
+            "r": 6,
+            "interval": [0, 4]
+        },
+    }
+}
+
 
 // legend
 var legend_div = document.createElement('div');
 legend_div.setAttribute("id", "legend");
 legend_div.setAttribute("class","legend-container row")
 
-for (var cat in magContentsValues) {
-    var values = magContentsValues[cat];
-    var color = values['color']
-    var size = values['size']
-    var font_weight = values['font-weight']
+// reorder key
+var mag_reordered = Object.keys(magContents()).reverse();
 
+mag_reordered.forEach(function (title, index) {
+    var values = magContents()[title];
+    var r = values['r']
+
+    // circle
     var legend_item_symb = document.createElement('div');
     legend_item_symb.setAttribute("class","legend-item-symb col-sm-6")
-    var legend_item_svg = create_circle(size, size, "svg" + cat, {"fill": color})
+    var legend_item_svg = create_circle(r, r, title)
     legend_item_symb.append(legend_item_svg)
 
+    // text
     var legend_item_value = document.createElement('div');
-    legend_item_value.setAttribute("class","legend-item-value col-sm-6")
-    legend_item_value.setAttribute("id", cat);
+    legend_item_value.setAttribute("class","legend-item-text col-sm-6")
+    legend_item_value.setAttribute("id", title);
     var value_item = document.createElement("a");
-    legend_item_value.setAttribute("style", "font-weight:" + font_weight);
 
 
-    value_item.innerHTML = cat
+    value_item.innerHTML = title
     legend_item_value.append(value_item)
 
     legend_div.append(legend_item_symb)
     legend_div.append(legend_item_value)
-}
-$('#side-bar').append(legend_div)
+})
+$('#legend').append(legend_div)
 
 
 
-function create_circle(width, height, id_name, style) {
+
+function create_circle(width, height, class_name) {
     var svgNS = "http://www.w3.org/2000/svg";
     var divis = 2
 
     var svg = document.createElementNS(svgNS,'svg');
-    svg.setAttribute("id", id_name)
+    svg.setAttribute("class", class_name)
     svg.setAttribute("height", height)
     svg.setAttribute("width", width)
-
 
     var svg_item = document.createElementNS(svgNS,"circle");
 
     svg_item.setAttributeNS(null,"cx"    , width / divis);
     svg_item.setAttributeNS(null,"cy"    , height / divis);
     svg_item.setAttributeNS(null,"r"     , width > height ? height / divis : width / divis);
-    for (var property in style) {
-        svg_item.setAttributeNS(null, property, style[property]);
-    }
     svg.append(svg_item);
 
     return svg
-}
-
-
-
-
-// get_usgs_eq_data
-function get_usgs_eq_data(start_year, end_year) {
-
-    // load data on his layer group
-    var magIntervals = magContents()
-
-    const http = new XMLHttpRequest()
-    http.open(
-        "GET",
-        "https://earthquake.usgs.gov/fdsnws/event/1/query?"+ 'format=geojson' + "&starttime=" + start_year + "&endtime=" + end_year +  "&minlatitude=" + map.getBounds().getSouth() + "&maxlatitude=" + map.getBounds().getNorth() + "&minlongitude=" + map.getBounds().getWest() + "&maxlongitude=" + map.getBounds().getEast(),
-    )
-    http.send(null);
-    http.onload = function (e) {
-        if (http.status === 200 && http.readyState === 4 ) {
-            var response = JSON.parse(http.responseText);
-
-            response['features'].forEach(function (feature, _) {
-
-                for (var category in magIntervals) {
-                    var values = magIntervals[category]
-                    if (feature.properties.mag >= values['intervals'][0] && feature.properties.mag < values['intervals'][1]) {
-                        featuresPrepared = L.geoJson(
-                            [feature],
-                            {
-                                onEachFeature: marker_popup,
-                                pointToLayer: function(feature, latlng) {
-                                    return L.circleMarker(
-                                        latlng,
-                                        styleTemplate(values['size'], values['color'], values['fillOpacity'], values['opacity'])
-                                    )
-                                }
-                            }
-                        )
-                        values['grouplayer'].addLayer(featuresPrepared)
-                    };
-                };
-            })
-        }
-        //check legend selections
-        highlightedModechecking()
-    }
-
-}
-
-function marker_popup(feature, layer) {
-        // ugly
-        content = "<b>Name:</b> " + feature.properties.title + "<br><b>magnitude:</b> " + feature.properties.mag + "<br><b>Date:</b> " + new Date(feature.properties.time);
-        layer.bindPopup(
-            content,
-            {
-                closeOnClick: false,
-                autoClose: false
-            }
-        );
-
-        layer.on('click', function(event){
-            layer.openPopup();
-        });
-}
-
-function styleTemplate(radius_value, fillecolor_value, fillOpacity_value, opacity_value) {
-    return {
-        radius: radius_value,
-        fillColor: fillecolor_value,
-        opacity: opacity_value,
-        fillOpacity: opacity_value,
-        color: 'black',
-        weight: 1
-    };
-}
-
-// Timeline interaction
-getDataAddMarkers = function(label, map) {
-    var dates = []
-    for (i = 0; i < 12; i++) {
-        var firstDate = new Date(label, i+1, 1);
-        var lastDate = new Date(label, i+1, 0);
-
-        dates.push([
-          [firstDate.getFullYear(), firstDate.getMonth(), firstDate.getDate()].join('-'),
-          [lastDate.getFullYear(), lastDate.getMonth() + 1, lastDate.getDate()].join('-')
-        ])
-    }
-
-    // clear all layers from last year
-    earthquakeLayersCl1.clearLayers()
-    earthquakeLayersCl2.clearLayers()
-    earthquakeLayersCl3.clearLayers()
-    earthquakeLayersCl4.clearLayers()
-    earthquakeLayersCl5.clearLayers()
-    earthquakeLayersCl6.clearLayers()
-
-    var layerGroups = {
-        "Minor": earthquakeLayersCl1,
-        "Light": earthquakeLayersCl2,
-        "Moderate": earthquakeLayersCl3,
-        "Strong": earthquakeLayersCl4,
-        "Major": earthquakeLayersCl5,
-        "Great": earthquakeLayersCl6,
-    }
-
-    // query data on each month between selected year
-
-    for (var i in dates) {
-        get_usgs_eq_data(dates[i][0], dates[i][1], map, layerGroups)
-    }
-}
-
-function magContents() {
-
-    return {
-        'Minor': {
-            "color": "#d9ef8b",
-            "size": 6,
-            "font-weight": "bold",
-            "fillOpacity":1,
-            "opacity":1,
-            "intervals": [0, 4.0],
-            "grouplayer": earthquakeLayersCl1
-        },
-        'Light': {
-            "color": "#fee08b",
-            "size": 10,
-            "font-weight": "bold",
-            "fillOpacity":1,
-            "opacity":1,
-            "intervals": [4.0, 5.0],
-            "grouplayer": earthquakeLayersCl2
-        },
-        'Moderate': {
-            "color": "#fdae61",
-            "size": 18,
-            "font-weight": "bold",
-            "fillOpacity":1,
-            "opacity":1,
-            "intervals": [5.0, 6.0],
-            "grouplayer": earthquakeLayersCl3
-        },
-        'Strong': {
-            "color": "#f46d43",
-            "size": 30,
-            "font-weight": "bold",
-            "fillOpacity":1,
-            "opacity":1,
-            "intervals": [6.0, 7.0],
-            "grouplayer": earthquakeLayersCl4
-        },
-        'Major': {
-            "color": "#d73027",
-            "size": 46,
-            "font-weight": "bold",
-            "fillOpacity":1,
-            "opacity":1,
-            "intervals": [7.0, 8.0],
-            "grouplayer": earthquakeLayersCl5
-        },
-        'Great': {
-            "color": "#a50026",
-            "size": 66,
-            "font-weight": "bold",
-            "fillOpacity":1,
-            "opacity":1,
-            "intervals": [8.0, 9999.0],
-            "grouplayer": earthquakeLayersCl6
-        }
-    }
 }
 
 $(document).ready(function() {
@@ -262,28 +269,9 @@ $(document).ready(function() {
         } else {
             textSvgCategory.css("font-weight", "bold");
         }
-        highlightedModechecking()
     });
 });
 
-function highlightedModechecking () {
-    var magIntervals = magContents()
-    for (var category in magIntervals) {
-
-        var textSvgCategory = $("#" + category)
-
-        groupLayerSelected = magContentsValues[category]["grouplayer"]
-
-        if (textSvgCategory.css("font-weight") == 700) {
-
-            groupLayerSelected.setStyle({fillOpacity:1,opacity:1})
-
-        } else {
-
-            groupLayerSelected.setStyle({fillOpacity:0,opacity:0})
-        }
-    }
-}
 
 // slider processing
 var slider = document.getElementById("mySlider");
@@ -300,10 +288,12 @@ slider.oninput = function() {
     var output = $("slider-value");
 
   $("#slider-value").text(this.value);
-  getDataAddMarkers(this.value, "value", map, "exclamation")
+  $("svg").find("g").remove();
+  getDataAddMarkers(this.value, map)
 }
 
 map.on("moveend", function(s){
-    getDataAddMarkers(slider.value, "value", map, "exclamation");
+    $("svg").find("g").remove();
+    getDataAddMarkers(slider.value, map);
 });
 

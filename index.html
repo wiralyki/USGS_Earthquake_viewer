@@ -8,6 +8,8 @@
 		<meta charset="utf-8" />
 		<meta name="viewport" content="width=device-width, initial-scale=1.0">
 
+<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/3.5.17/d3.min.js"></script>
+
 
 		<script src="https://unpkg.com/leaflet@1.5.1/dist/leaflet.js" integrity="sha512-GffPMF3RvMeYyc1LWMHtK8EbPv0iNZ8/oTtHPx9/cc2ILxQ+u905qIwdpULaqDkyBKgOaB57QTMg7ztg8Jm2Og==" crossorigin=""></script>
 		<link rel="stylesheet" href="https://unpkg.com/leaflet@1.5.1/dist/leaflet.css" integrity="sha512-xwE/Az9zrjBIphAcBb3F6JVqxf46+CDLwfLMHloNu6KEQCAWi6HcDUbeOfBIptF7tcCzusKFjFw2yuvEpDL9wQ==" crossorigin=""/>
@@ -42,9 +44,19 @@
 				 <div class="col-sm" id="time-slider">
 					<div class="range range-primary">
 						<input type="range" class="custom-range" min="1980" max="2019" value="2000" step="1" class="slider" id="mySlider">
-						<p>Your slider has a value of <span id="slider-value"></span>2000</p>
+						<p>Your slider has a value of <span id="slider-value"></span></p>
 				  </div>
 				</div>
+
+				<div class="col-sm" id="legend">
+
+				</div>
+
+				<div class="col-sm" id="chart">
+
+				</div>
+
+
 			</div>
 		</div>
 	 </div>
@@ -52,5 +64,7 @@
 
 		<script src="scripts/map.js"></script>
 		<link rel="stylesheet" type="text/css" href="styles/index.css">
+		<link rel="stylesheet" type="text/css" href="styles/map.css">
+
 </body>
 </html>

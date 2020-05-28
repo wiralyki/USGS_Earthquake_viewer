@@ -4,6 +4,7 @@
 }
 
 #legend {
+    align-items: center;
 }
 
 .slidecontainer {
@@ -17,14 +18,14 @@
 }
 
 .legend-button {
-    font-weight: "bold";
+    font-weight:"bold";
 }
 .legend-item-symb {
     text-align: center;
 }
 
-.legend-item-value {
-    text-align: center;
+.legend-item-text {
+    /*text-align: center;*/
 }
 
 svg {
