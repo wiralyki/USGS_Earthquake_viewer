@@ -1,50 +1,56 @@
-.minor {
+.minor circle{
     fill:#d9ef8b;
     size:6px;
     opacity:1;
     stroke: black;
-            z-index: 5;
+    z-index: 5;
+    r:6;
 
 }
 
-.light {
+.light circle{
     fill:#fee08b;
     size: 10px;
     opacity:1;
     stroke: black;
-        z-index: 4;
+    z-index: 4;
+    r:10;
 }
 
-.moderate {
+.moderate circle{
     fill: #fdae61;
     size:18px;
     opacity: 1;
     stroke: black;
         z-index: 3;
+        r:18;
 }
 
-.strong {
+.strong circle{
     fill:#f46d43;
     size:30px;
     opacity:1;
     stroke: black;
         z-index: 2;
+        r:30;
 }
 
-.major {
+.major circle{
     fill:#d73027;
     size:46px;
     opacity:1;
     stroke: black;
         z-index: 1;
+        r:46;
 }
 
-.great {
+.great circle{
     fill:#a50026;
     size:66px;
     opacity:1;
     stroke: black;
     z-index: 0;
+        r:66;
 }
 
 

@@ -22,91 +22,64 @@ var chart_data = []
 var chart_data_grouped = []
 
 function get_data_from_usgs(start_date, end_date) {
-    var url_build = `https://earthquake.usgs.gov/fdsnws/event/1/query?format=geojson&starttime=${start_date}&endtime=${end_date}&minlatitude=${map.getBounds().getSouth()}&maxlatitude=${map.getBounds().getNorth()}&minlongitude=${map.getBounds().getWest()}&maxlongitude=${map.getBounds().getEast()}`;
+    var url_build = `http://127.0.0.1:5000/api/v1/mapdata?start_date=${start_date}&end_date=${end_date}&min_lat=${map.getBounds().getSouth()}&max_lat=${map.getBounds().getNorth()}&min_lng=${map.getBounds().getWest()}&max_lng=${map.getBounds().getEast()}`;
 
     $.ajax({
         url: url_build,
         async: true,
         success: function (result) {
 
-            var data = result["features"];
+            var mapData = result["map_data"];
+            var chartData = result["chart_data"];
 
-            data.forEach(function (d, i) {
-                d.LatLng = new L.LatLng(
-                    d.geometry.coordinates[1],
-                    d.geometry.coordinates[0]
-                )
-            })
-
-            data.forEach(function (d, i) {
-                d.title = set_svg_attr(d)["class"]
-            })
-
-            data.forEach(function (d, i) {
-                d.r = set_svg_attr(d)["r"]
-            })
-
-            data.forEach(function (d, i) {
-                d.place = d.properties.place
-            })
-
-
-            chart_data = $.merge(chart_data, data)
-
-            let data_grouped = data.reduce((data, item) => {
-                data[item.title] = data[item.title] || [];
-                data[item.title].push(item);
-                return data;
-            }, {});
-
-            // order svg group
-            var svg = d3.select("#map").select("svg")
-            for (var title in magContents()) {
-                var g = svg.append("g")
-                g.attr("class", title)
-            }
-
-            for (var title in data_grouped) {
-                var data_group = data_grouped[title]
-
-                var g = svg.select("." + title);
-                var _ = g.selectAll("LatLng")
-                    .data(data_group)
-                    .enter().append("circle")
-                    .attr("r", function (d, i) {
-                        return set_svg_attr(d)["r"];
-                    })
-                    .attr("transform", function (d, i) {
-                        return transform_coords(d);
-                    })
-
-                var time_between_each_object = 100;
-                var fade_speed = 1000;
-                $("svg").find("g").each(function (i, path) {
-                    $(path).delay(time_between_each_object * i).fadeIn(fade_speed, function () {
-
-                    });
-                })
-            }
-
-            var result = Object.values(chart_data.reduce(function(r, e) {
-                var key = e.place + '|' + e.title;
-                if (!r[key]) r[key] = e;
-                else {
-                    r[key].used += e.used;
-                    r[key].instances += e.instances
-                }
-                return r;
-            }, {}))
-
-            console.log(result);
-
+            objectsMapper(mapData)
 
         },
     })
 
+}
 
 
+function objectsMapper(data) {
+    data.forEach(function (feature, i) {
+        feature.LatLng = new L.LatLng(
+            feature.y,
+            feature.x
+        )
+    })
+
+    let data_grouped = data.reduce((data, feature) => {
+        data[feature.mag_cat] = data[feature.mag_cat] || [];
+        data[feature.mag_cat].push(feature);
+        return data;
+    }, {});
+
+    // order svg group
+    var svg = d3.select("#map").select("svg")
+    for (var mag_cat in magContents()) {
+        var g = svg.append("g")
+        g.attr("class", mag_cat)
+    }
+
+    for (var mag_cat in data_grouped) {
+        var data_group = data_grouped[mag_cat]
+
+        var g = svg.select("." + mag_cat);
+        var _ = g.selectAll("LatLng")
+            .data(data_group)
+            .enter().append("circle")
+            .attr("transform", function (d, i) {
+                return transform_coords(d);
+            })
+
+        var time_between_each_object = 100;
+        var fade_speed = 1000;
+        $("svg").find("g").each(function (i, path) {
+            $(path).delay(time_between_each_object * i).fadeIn(fade_speed, function () {
+
+            });
+        })
+    }
 }
 
 
@@ -114,43 +87,11 @@ function get_data_from_usgs(start_date, end_date) {
 //     d3.select(this).raise();
 // });
 
-// var chart_data_grouped = []
 // Timeline interaction
 
-function getData(dates) {
-    for (var i in dates) {
-        get_data_from_usgs(dates[i][0], dates[i][1]);
-    }
-}
-
-function getDataAddMarkers(label) {
-    var dates = []
-    for (i = 0; i < 12; i++) {
-
-        var firstDate = new Date(label, i);
-        var nextFirstDateMonth = new Date(label, i + 1);
-        var lastDate = new Date(nextFirstDateMonth - 1);
-
-        dates.push([
-            [firstDate.getFullYear(), firstDate.getMonth() + 1, firstDate.getDate()].join('-'),
-            [lastDate.getFullYear(), lastDate.getMonth() + 1, lastDate.getDate()].join('-')
-        ])
-    }
-    // query data on each month between selected year
-    // for (var i in dates) {
-    //     get_data_from_usgs(dates[i][0], dates[i][1]);
-    // }
-    getData(dates)
-}
 
 
 
-
-
-
-
-
-console.log(chart_data)
 
 
 
@@ -161,43 +102,27 @@ function transform_coords(d) {
            coor.y + ")";
 }
 
-function set_svg_attr(feature) {
-    for (var title in magContents()){
-
-        var interval_values = magContents()[title].interval
-        if (feature.properties.mag >= interval_values[0] && feature.properties.mag < interval_values[1])
-            return {"class": title, "r": magContents()[title].r}
-
-     }
-}
-
 
 function magContents() {
 
     return {
         'great': {
             "r": 66,
-            "interval": [8, 9999]
         },
         'major': {
             "r": 46,
-            "interval": [7, 8]
         },
         'strong': {
             "r": 30,
-            "interval": [6, 7]
         },
         'moderate': {
             "r": 18,
-            "interval": [5, 6]
         },
         'light': {
             "r": 10,
-            "interval": [4, 5]
         },
         'minor': {
             "r": 6,
-            "interval": [0, 4]
         },
     }
 }
@@ -285,21 +210,40 @@ slider.min = 1980
 // output.innerHTML = slider.value; // Display the default slider value
 
 // Update the current slider value (each time you drag the slider handle)
-slider.oninput = function() {
-    var output = $("slider-value");
+// slider.oninput = function() {
+//     var output = $("from-date-input");
+//
+//   $("#slider-value").text(this.value);
+//   $("svg").find("g").remove();
+//   getDataAddMarkers(this.value, map)
+// }
 
-  $("#slider-value").text(this.value);
-  $("svg").find("g").remove();
-  getDataAddMarkers(this.value, map)
-}
 
-map.on("moveend", function(s){
-    $("svg").find("g").remove();
-    getDataAddMarkers(slider.value, map);
+$("submit").click(function(){
+  alert("The paragraph was clicked.");
+
+   var start_date = $("#from-date-input").attr("value");
+   var end_date = $("#to-date-input").attr("value");
+
+   get_data_from_usgs(start_date, end_date);
+
 });
 
 
+map.on("moveend", function(s){
+    $("svg").find("g").remove();
+    var start_date = $("#from-date-input").attr("value");
+    var end_date = $("#to-date-input").attr("value");
 
+    get_data_from_usgs(start_date, end_date);
+});
+
+
+function toDateTime(secs) {
+    var t = new Date(1970, 0, 1); // Epoch
+    t.setSeconds(secs);
+    return t;
+}
 
 
 
