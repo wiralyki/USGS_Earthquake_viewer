@@ -3,7 +3,6 @@
     size:6px;
     opacity:1;
     stroke: black;
-    z-index: 5;
     r:6;
 
 }
@@ -13,7 +12,6 @@
     size: 10px;
     opacity:1;
     stroke: black;
-    z-index: 4;
     r:10;
 }
 
@@ -22,8 +20,7 @@
     size:18px;
     opacity: 1;
     stroke: black;
-        z-index: 3;
-        r:18;
+    r:18;
 }
 
 .strong circle{
@@ -31,8 +28,7 @@
     size:30px;
     opacity:1;
     stroke: black;
-        z-index: 2;
-        r:30;
+    r:30;
 }
 
 .major circle{
@@ -40,8 +36,7 @@
     size:46px;
     opacity:1;
     stroke: black;
-        z-index: 1;
-        r:46;
+    r:46;
 }
 
 .great circle{
@@ -49,8 +44,7 @@
     size:66px;
     opacity:1;
     stroke: black;
-    z-index: 0;
-        r:66;
+    r:66;
 }
 
 
@@ -58,18 +52,16 @@ g {
     display:none
 }
 
-/*circle {*/
-/*  animation: bounce 1s;*/
-/*}*/
+#legend-content {
+    align-items: center;
+    padding-left: 10%;
+    padding-top: 15%;
+}
 
-/*@keyframes bounce {*/
-/*  100% {*/
-/*    transform: scale(1);*/
-/*  }*/
-/*  !*50% {*!*/
-/*  !*  transform: scale(0.5);*!*/
-/*  !*}*!*/
-/*  0% {*/
-/*    transform: scale(0.1);*/
-/*  }*/
-/*}*/
+.legend-item-symbol circle{
+    text-align: center;
+}
+
+.legend-item-symbol text{
+    text-align: center;
+}

@@ -128,59 +128,90 @@ function magContents() {
 }
 
 
-// legend
-var legend_div = document.createElement('div');
-legend_div.setAttribute("id", "legend");
-legend_div.setAttribute("class","legend-container row")
-
-// reorder key
-var mag_reordered = Object.keys(magContents()).reverse();
-
-mag_reordered.forEach(function (title, index) {
-    var values = magContents()[title];
-    var r = values['r']
-
-    // circle
-    var legend_item_symb = document.createElement('div');
-    legend_item_symb.setAttribute("class","legend-item-symb col-sm-6")
-    var legend_item_svg = create_circle(r, r, title)
-    legend_item_symb.append(legend_item_svg)
-
-    // text
-    var legend_item_value = document.createElement('div');
-    legend_item_value.setAttribute("class","legend-item-text col-sm-6")
-    legend_item_value.setAttribute("id", title);
-    var value_item = document.createElement("a");
-
-
-    value_item.innerHTML = title
-    legend_item_value.append(value_item)
-
-    legend_div.append(legend_item_symb)
-    legend_div.append(legend_item_value)
-})
-$('#legend').append(legend_div)
-
-
+// // legend
+// var legend_div = document.createElement('div');
+// legend_div.setAttribute("id", "legend");
+// legend_div.setAttribute("class","legend-container row")
+//
+// // reorder key
+// var mag_reordered = Object.keys(magContents());
+//
+// mag_reordered.forEach(function (title, index) {
+//     var values = magContents()[title];
+//     var r = values['r']
+//
+//     // circle
+//     var legend_item_symb = document.createElement('div');
+//     legend_item_symb.setAttribute("class","legend-item-symb col-sm-6")
+//     var legend_item_svg = create_circle(25, 25, title)
+//     legend_item_symb.append(legend_item_svg)
+//
+//     // text
+//     var legend_item_value = document.createElement('div');
+//     legend_item_value.setAttribute("class","legend-item-text col-sm-6")
+//     legend_item_value.setAttribute("id", title);
+//     var value_item = document.createElement("a");
+//
+//
+//     value_item.innerHTML = title
+//     legend_item_value.append(value_item)
+//
+//     legend_div.append(legend_item_symb)
+//     legend_div.append(legend_item_value)
+// })
+// $('#legend').append(legend_div)
 
 
-function create_circle(width, height, class_name) {
+
+
+
+function createLegend(width, height) {
     var svgNS = "http://www.w3.org/2000/svg";
     var divis = 2
+    var width = 30;
+    var height = 30;
 
-    var svg = document.createElementNS(svgNS,'svg');
-    svg.setAttribute("class", class_name)
-    svg.setAttribute("height", height)
-    svg.setAttribute("width", width)
+    // legend
+    var legend_div = document.createElement('div');
+    legend_div.setAttribute("id", "legend-content");
+    legend_div.setAttribute("class","legend-container row")
 
-    var svg_item = document.createElementNS(svgNS,"circle");
+    // create legend item div
+    var legend_item_div = document.createElement('div');
+    legend_item_div.setAttribute("id", "legend-item-div");
+    legend_item_div.setAttribute("class","col-sm")
 
-    svg_item.setAttributeNS(null,"cx"    , width / divis);
-    svg_item.setAttributeNS(null,"cy"    , height / divis);
-    svg_item.setAttributeNS(null,"r"     , width > height ? height / divis : width / divis);
-    svg.append(svg_item);
+    var mag_reordered = Object.keys(magContents());
+    mag_reordered.forEach(function (mag_cat, index) {
 
-    return svg
+
+        // create symbol div
+        var legend_item_symbol = document.createElement('div');
+        legend_item_symbol.setAttribute("class","legend-item-symbol col-sm")
+        // svg
+        var legend_item_svg = document.createElementNS(svgNS,'svg');
+        legend_item_svg.setAttribute("height", width)
+        legend_item_svg.setAttribute("width", width)
+        legend_item_svg.setAttribute("class", mag_cat)
+        // dot
+        var svgCircle = document.createElementNS(svgNS,"circle");
+        svgCircle.setAttributeNS(null,"cx", width / divis);
+        svgCircle.setAttributeNS(null,"cy", height / divis);
+        legend_item_svg.append(svgCircle);
+        // text
+        var svgText = document.createElementNS(svgNS,"text");
+        svgText.setAttribute("x", (width / divis) + width * 2.5);
+        svgText.setAttribute("y", height / divis);
+        svgText.setAttribute("alignment-baseline", "middle")
+        svgText.innerHTML = mag_cat
+        legend_item_svg.append(svgText);
+
+
+        legend_item_symbol.append(legend_item_svg)
+        legend_item_div.append(legend_item_symbol)
+        legend_div.append(legend_item_div)
+    })
+    $('#legend').append(legend_div)
 }
 
 $(document).ready(function() {
@@ -198,6 +229,22 @@ $(document).ready(function() {
     });
 });
 
+// function find_style(reference) {
+//     var styleSheets = document.styleSheets;
+//
+//     for(var i = 0; i < styleSheets.length; i++){
+//         var styleSheet = styleSheets[i]
+//
+//         for(var j = 0; j < styleSheet.cssRules.length; i++) {
+//             var cssStyle = styleSheet.cssRules[j]
+//
+//             if (cssStyle.selectorText == reference) {
+//
+//                 return cssStyle.style
+//             }
+//         }
+//     }
+// }
 
 // slider processing
 var slider = document.getElementById("mySlider");
@@ -218,6 +265,7 @@ slider.min = 1980
 //   getDataAddMarkers(this.value, map)
 // }
 
+createLegend(1, 1)
 
 $("submit").click(function(){
   alert("The paragraph was clicked.");
@@ -226,6 +274,7 @@ $("submit").click(function(){
    var end_date = $("#to-date-input").attr("value");
 
    get_data_from_usgs(start_date, end_date);
+
 
 });
 
@@ -236,6 +285,7 @@ map.on("moveend", function(s){
     var end_date = $("#to-date-input").attr("value");
 
     get_data_from_usgs(start_date, end_date);
+
 });
 
 

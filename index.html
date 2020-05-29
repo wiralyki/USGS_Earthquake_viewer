@@ -18,6 +18,7 @@
 		<script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.0/dist/umd/popper.min.js" integrity="sha384-Q6E9RHvbIyZFJoft+2mJbHaEWldlvI9IOYy5n3zV9zzTtmI3UksdQRVvoxMfooAo" crossorigin="anonymous"></script>
 		<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.0/js/bootstrap.min.js" integrity="sha384-OgVRvuATP1z7JjHLkuOU7Xw704+h835Lr+6QL9UvYjZE3Ipu6Tp75j7Bh/kR0JKI" crossorigin="anonymous"></script>
         <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.0/css/bootstrap.min.css" integrity="sha384-9aIt2nRpC12Uk9gS9baDl411NQApFmC26EwAOH8WgZl5MYYxFfc+NcPb1dKGj7Sk" crossorigin="anonymous">
+		<link id="map_css" rel="stylesheet" type="text/css" href="styles/map.css">
 
 
 	</head>
@@ -40,29 +41,39 @@
             <div class="col-sm-8" id="map"></div>
 
             <div class="col-sm-4" id="side-bar">
+				<div class="side-bar-container">
 
-				<div class="form-group row">
-				  <label id="start_date" for="from-date-input" class="col-2 col-form-label">From date</label>
-				  <div class="col-10">
-					<input class="form-control" type="date" value="2000-01-01" id="from-date-input">
-				  </div>
-				</div>
-				<div class="form-group row">
-				  <label id="end_date" for="to-date-input" class="col-2 col-form-label">To date</label>
-				  <div class="col-10">
-					<input class="form-control" type="date" value="2001-01-08" id="to-date-input">
-				  </div>
-				</div>
-				<button class="btn btn-primary btn-sm" type="submit">Submit form</button>
+					<div class="pickup-dates-container side-bar-item">
+						<h4>Get data between 2 dates:</h4>
+						<div class="form-group row">
+						  <label id="start_date" for="from-date-input" class="col-3 col-form-label">From date</label>
+						  <div class="col-9">
+							<input class="form-control" type="date" value="2000-01-01" id="from-date-input">
+						  </div>
+						</div>
+						<div class="form-group row">
+						  <label id="end_date" for="to-date-input" class="col-3 col-form-label">To date</label>
+						  <div class="col-9">
+							<input class="form-control" type="date" value="2001-01-08" id="to-date-input">
+						  </div>
+						</div>
+						<button class="btn btn-primary btn-sm" type="submit">Submit</button>
+					</div>
 
-				 <div class="col-sm" id="time-slider">
-					<div class="range range-primary">
-						<input type="range" class="custom-range" min="1980" max="2019" value="2000" step="1" class="slider" id="mySlider">
-						<p>Your slider has a value of <span id="slider-value"></span></p>
-				  </div>
-				</div>
+					<div class="slider-dates-container side-bar-item">
+						<h4>Visualize the evolution:</h4>
+						 <div class="col-sm" id="time-slider">
+							<div class="range range-primary">
+								<input type="range" class="custom-range" min="1980" max="2019" value="2000" step="1" class="slider" id="mySlider">
+								<p>Your slider has a value of <span id="slider-value"></span></p>
+						  </div>
+						</div>
+					</div>
 
-			<div class="col-sm" id="legend"></div>
+
+					<div class="col-sm" id="legend"></div>
+
+				</div>
 
 			<div class="col-sm" id="chart"></div>
 
@@ -74,7 +85,6 @@
 
 		<script src="scripts/map.js"></script>
 		<link rel="stylesheet" type="text/css" href="styles/index.css">
-		<link rel="stylesheet" type="text/css" href="styles/map.css">
 
 </body>
 </html>
