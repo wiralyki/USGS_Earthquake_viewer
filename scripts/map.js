@@ -83,18 +83,6 @@ function objectsMapper(data) {
 }
 
 
-// d3.selectAll("circle").on("mouseover", function(){
-//     d3.select(this).raise();
-// });
-
-// Timeline interaction
-
-
-
-
-
-
-
 function transform_coords(d) {
     var coor = map.latLngToLayerPoint(d.LatLng);
        return "translate(" +
@@ -105,64 +93,7 @@ function transform_coords(d) {
 
 function magContents() {
 
-    return {
-        'great': {
-            "r": 66,
-        },
-        'major': {
-            "r": 46,
-        },
-        'strong': {
-            "r": 30,
-        },
-        'moderate': {
-            "r": 18,
-        },
-        'light': {
-            "r": 10,
-        },
-        'minor': {
-            "r": 6,
-        },
-    }
-}
-
-
-// // legend
-// var legend_div = document.createElement('div');
-// legend_div.setAttribute("id", "legend");
-// legend_div.setAttribute("class","legend-container row")
-//
-// // reorder key
-// var mag_reordered = Object.keys(magContents());
-//
-// mag_reordered.forEach(function (title, index) {
-//     var values = magContents()[title];
-//     var r = values['r']
-//
-//     // circle
-//     var legend_item_symb = document.createElement('div');
-//     legend_item_symb.setAttribute("class","legend-item-symb col-sm-6")
-//     var legend_item_svg = create_circle(25, 25, title)
-//     legend_item_symb.append(legend_item_svg)
-//
-//     // text
-//     var legend_item_value = document.createElement('div');
-//     legend_item_value.setAttribute("class","legend-item-text col-sm-6")
-//     legend_item_value.setAttribute("id", title);
-//     var value_item = document.createElement("a");
-//
-//
-//     value_item.innerHTML = title
-//     legend_item_value.append(value_item)
-//
-//     legend_div.append(legend_item_symb)
-//     legend_div.append(legend_item_value)
-// })
-// $('#legend').append(legend_div)
-
-
-
+    return ['great', 'major', 'strong', 'moderate', 'light', 'minor']
 
 
 function createLegend(width, height) {
@@ -214,37 +145,8 @@ function createLegend(width, height) {
     $('#legend').append(legend_div)
 }
 
-$(document).ready(function() {
-    $(".legend-item-value").click(function(){
-        // console.log(this.id)
-        // highlightedModeSelecting(this.id)
-        var textSvgCategory = $("#" + this.id)
-        groupLayerSelected = magContentsValues[this.id]["grouplayer"]
-        console.log(textSvgCategory.css("font-weight"))
-        if (textSvgCategory.css("font-weight") == 700) {
-            textSvgCategory.css("font-weight", "normal");
-        } else {
-            textSvgCategory.css("font-weight", "bold");
-        }
-    });
-});
 
-// function find_style(reference) {
-//     var styleSheets = document.styleSheets;
-//
-//     for(var i = 0; i < styleSheets.length; i++){
-//         var styleSheet = styleSheets[i]
-//
-//         for(var j = 0; j < styleSheet.cssRules.length; i++) {
-//             var cssStyle = styleSheet.cssRules[j]
-//
-//             if (cssStyle.selectorText == reference) {
-//
-//                 return cssStyle.style
-//             }
-//         }
-//     }
-// }
+
 
 // slider processing
 var slider = document.getElementById("mySlider");
