@@ -24,15 +24,12 @@ var chart_data_grouped = []
 function get_data_from_usgs(start_date, end_date) {
     var url_build = `https://earthquake.usgs.gov/fdsnws/event/1/query?format=geojson&starttime=${start_date}&endtime=${end_date}&minlatitude=${map.getBounds().getSouth()}&maxlatitude=${map.getBounds().getNorth()}&minlongitude=${map.getBounds().getWest()}&maxlongitude=${map.getBounds().getEast()}`;
 
-    const http = new XMLHttpRequest()
-    http.open(
-        "GET",
-        url_build,
-    )
-    http.send(null);
-    http.onload = function (e) {
-        if (http.status === 200 && http.readyState === 4) {
-            var data = JSON.parse(http.responseText)["features"];
+    $.ajax({
+        url: url_build,
+        async: true,
+        success: function (result) {
+
+            var data = result["features"];
 
             data.forEach(function (d, i) {
                 d.LatLng = new L.LatLng(
@@ -92,9 +89,24 @@ function get_data_from_usgs(start_date, end_date) {
                 })
             }
 
-        }
-        return true
-    }
+            var result = Object.values(chart_data.reduce(function(r, e) {
+                var key = e.place + '|' + e.title;
+                if (!r[key]) r[key] = e;
+                else {
+                    r[key].used += e.used;
+                    r[key].instances += e.instances
+                }
+                return r;
+            }, {}))
+
+            console.log(result);
+
+
+        },
+    })
+
+
+
 }
 
 
@@ -106,13 +118,9 @@ function get_data_from_usgs(start_date, end_date) {
 // Timeline interaction
 
 function getData(dates) {
-    return new Promise(resolve => {
-        for (var i in dates) {
-            get_data_from_usgs(dates[i][0], dates[i][1]);
-        }
-        resolve(true)
-
-    })
+    for (var i in dates) {
+        get_data_from_usgs(dates[i][0], dates[i][1]);
+    }
 }
 
 function getDataAddMarkers(label) {
@@ -132,14 +140,7 @@ function getDataAddMarkers(label) {
     // for (var i in dates) {
     //     get_data_from_usgs(dates[i][0], dates[i][1]);
     // }
-    getData(dates).then(function (e) {
-        chart_data_grouped = chart_data.reduce((feature, {place, title}) => {
-            feature[place] = feature[place] || {place, title, count: 0};
-            feature[place].count += 1;
-            return feature;
-        }, {})
-        console.log(chart_data_grouped);
-    })
+    getData(dates)
 }
 
 
@@ -296,4 +297,14 @@ map.on("moveend", function(s){
     $("svg").find("g").remove();
     getDataAddMarkers(slider.value, map);
 });
+
+
+
+
+
+
+
+
+
+
 
