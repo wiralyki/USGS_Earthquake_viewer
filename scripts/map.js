@@ -14,13 +14,6 @@ var map = L.map(
 setTimeout(function () { map.invalidateSize() }, 800);
 
 
-/* Initialize the SVG layer */
-var svgLayer = L.svg();
-svgLayer.addTo(map);
-
-var chart_data = []
-var chart_data_grouped = []
-
 function get_data_from_usgs(start_date, end_date) {
     var url_build = `http://127.0.0.1:5000/api/v1/mapdata?start_date=${start_date}&end_date=${end_date}&min_lat=${map.getBounds().getSouth()}&max_lat=${map.getBounds().getNorth()}&min_lng=${map.getBounds().getWest()}&max_lng=${map.getBounds().getEast()}`;
 
@@ -33,7 +26,7 @@ function get_data_from_usgs(start_date, end_date) {
             var chartData = result["chart_data"];
 
             objectsMapper(mapData)
-            // objectsCharted(chartData)
+            objectsCharted(chartData)
         },
     })
 
@@ -54,8 +47,13 @@ function objectsMapper(data) {
         return data;
     }, {});
 
+
+    /* Initialize the SVG layer */
+    var svgLayer = L.svg();
+    svgLayer.addTo(map);
+
     // order svg group
-    var svg = d3.select("#map").select("svg")
+    var svg = d3.select("#map").select("svg").attr("id", "svgMap")
     var mag_reordered = magContents();
     mag_reordered.forEach(function (mag_cat, index) {
         var g = svg.append("g")
@@ -83,82 +81,112 @@ function objectsMapper(data) {
     }
 }
 
+function objectsCharted(chart_data) {
+    var width = 900
+    var height = 300
 
-function objectsCharted(data) {
-    // set the dimensions of the canvas
-    var margin = {top: 20, right: 20, bottom: 70, left: 40},
-        width = 600 - margin.left - margin.right,
-        height = 300 - margin.top - margin.bottom;
+    function sum( obj, keys ) {
+      var sum = 0;
+      for( var el in obj ) {
+        if(keys.includes(el)) {
+          sum += parseFloat( obj[el] );
+        }
+      }
+      return sum;
+    }
 
+    chart_data.forEach(function (feature, i) {
+        feature.count = sum(feature, magContents())
+    })
+    var data = chart_data
 
-    // set the ranges
-    var x = d3.scale.ordinal().rangeRoundBands([0, width], .05);
+    var margin = {top: 20, right: 50, bottom: 30, left: 20};
+    var width = width - margin.left - margin.right;
+    var height = height - margin.top - margin.bottom;
+    var svg = d3.select("#chart")
+        .append("svg")
+        .attr("id", "svgChart")
+        .attr("viewBox", `-10 -10 ${width} ${width}`)
+    var g = svg.append("g").attr("transform", "translate(" + margin.left + "," + margin.top + ")");
 
-    var y = d3.scale.linear().range([height, 0]);
+    var x = d3.scaleBand()
+        .rangeRound([0, width])
+        .paddingInner(0.05)
+        .align(0.1);
 
-    // define the axis
-    var xAxis = d3.svg.axis()
-        .scale(x)
-        .orient("bottom")
+    var y = d3.scaleLinear().rangeRound([height, 0]);
 
+    var z = d3.scaleOrdinal()
+        .range(["#98abc5", "#8a89a6", "#7b6888", "#6b486b", "#a05d56", "#d0743c", "#ff8c00"]);
 
-    var yAxis = d3.svg.axis()
-        .scale(y)
-        .orient("left")
-        .ticks(10);
+    var columns = magContents();
+    var keys = magContents().reverse();
 
+    data.sort(function(a, b) { return b.total - a.total; });
+    x.domain(data.map(function(d,i) { return i; }));
+    y.domain([0, d3.max(data, function(d) { return d.count; })]).nice();
+    z.domain(keys);
 
-    // add the SVG element
-    var svg = d3.select("chart").append("svg")
-        .attr("width", width + margin.left + margin.right)
-        .attr("height", height + margin.top + margin.bottom)
-      .append("g")
-        .attr("transform",
-              "translate(" + margin.left + "," + margin.top + ")");
+    g.append("g")
+        .selectAll("g")
+        .data(d3.stack().keys(keys)(data))
+        .enter().append("g")
+          .attr("class", function(d) { return d.key; })
+        .selectAll("rect")
+        .data(function(d) { return d; })
+        .enter().append("rect")
+          .attr("x", function(d,i) { return x(i); })
+          .attr("y", function(d) { return y(d[1]); })
+          .attr("height", function(d) { return y(d[0]) - y(d[1]); })
+          .attr("width", x.bandwidth());
 
+    g.append("g")
+        .attr("class", "x axis")
+        .attr("transform", "translate(0," + height + ")")
+        .call(d3.axisBottom(x).tickFormat(function(d,i) { return data[i].place}))
+      .selectAll("text")
+        .attr("y", 0)
+        .attr("x", 9)
+        .attr("dy", ".35em")
+        .attr("transform", "rotate(45)")
+        .style("text-anchor", "start");
 
-    // load the data
-    d3.json("data.json", function(error, data) {
-
-
-    // scale the range of the data
-    x.domain(data.map(function(d) { return d.Letter; }));
-    y.domain([0, d3.max(data, function(d) { return d.Freq; })]);
-
-    // add axis
-    svg.append("g")
-      .attr("class", "x axis")
-      .attr("transform", "translate(0," + height + ")")
-      .call(xAxis)
-    .selectAll("text")
-      .style("text-anchor", "end")
-      .attr("dx", "-.8em")
-      .attr("dy", "-.55em")
-      .attr("transform", "rotate(-90)" );
-
-    svg.append("g")
-      .attr("class", "y axis")
-      .call(yAxis)
+    g.append("g")
+        .attr("class", "y axis")
+        .call(d3.axisLeft(y).ticks(null, "s"))
     .append("text")
-      .attr("transform", "rotate(-90)")
-      .attr("y", 5)
-      .attr("dy", ".71em")
-      .style("text-anchor", "end")
-      .text("Frequency");
+        .attr("x", 2)
+        .attr("y", y(y.ticks().pop()) + 0.5)
+        .attr("dy", "0.32em")
+        .attr("fill", "#000")
+        .attr("font-weight", "bold")
+        .attr("text-anchor", "start")
+        .text("Earthquakes");
 
+    var legend = g.append("g")
+        .attr("font-family", "sans-serif")
+        .attr("font-size", 10)
+        .attr("text-anchor", "end")
+    .selectAll("g")
+    .data(keys.reverse())
+    .enter().append("g")
+        .attr("transform", function(d, i) { return "translate(0," + i * 20 + ")"; });
 
-    // Add bar chart
-    svg.selectAll("bar")
-      .data(data)
-    .enter().append("rect")
-      .attr("class", "bar")
-      .attr("x", function(d) { return x(d.Letter); })
-      .attr("width", x.rangeBand())
-      .attr("y", function(d) { return y(d.Freq); })
-      .attr("height", function(d) { return height - y(d.Freq); });
+    legend.append("rect")
+        .attr("x", width - 19)
+        .attr("width", 19)
+        .attr("height", 19)
+        .attr("fill", z)
+        .attr("class", function(d) { return d; });
 
-    });
+    legend.append("text")
+        .attr("x", width - 24)
+        .attr("y", 9.5)
+        .attr("dy", "0.32em")
+        .text(function(d) { return d; });
+
 }
+
 
 
 function transform_coords(d) {
@@ -247,12 +275,13 @@ slider.min = 1980
 
 createLegend(1, 1)
 
-$("submit").click(function(){
-  alert("The paragraph was clicked.");
+$("#submit-dates").click(function(){
 
-   var start_date = $("#from-date-input").attr("value");
-   var end_date = $("#to-date-input").attr("value");
-
+   $("#map").find("svg").remove()
+   $("#chart").find("svg").remove()
+   var start_date = $("#from-date-input").val();
+   var end_date = $("#to-date-input").val();
+    alert(start_date + " " + end_date);
    get_data_from_usgs(start_date, end_date);
 
 
@@ -260,10 +289,10 @@ $("submit").click(function(){
 
 
 map.on("moveend", function(s){
-    $("svg").find("g").remove();
-    var start_date = $("#from-date-input").attr("value");
-    var end_date = $("#to-date-input").attr("value");
-
+   $("#map").find("svg").remove()
+   $("#chart").find("svg").remove()
+   var start_date = $("#from-date-input").val();
+   var end_date = $("#to-date-input").val();
     get_data_from_usgs(start_date, end_date);
 
 });

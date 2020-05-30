@@ -1,15 +1,12 @@
 .minor circle{
     fill:#d9ef8b;
-    size:6px;
     opacity:1;
     stroke: black;
     r:6;
-
 }
 
 .light circle{
     fill:#fee08b;
-    size: 10px;
     opacity:1;
     stroke: black;
     r:10;
@@ -17,7 +14,6 @@
 
 .moderate circle{
     fill: #fdae61;
-    size:18px;
     opacity: 1;
     stroke: black;
     r:18;
@@ -25,7 +21,6 @@
 
 .strong circle{
     fill:#f46d43;
-    size:30px;
     opacity:1;
     stroke: black;
     r:30;
@@ -33,7 +28,6 @@
 
 .major circle{
     fill:#d73027;
-    size:46px;
     opacity:1;
     stroke: black;
     r:46;
@@ -41,16 +35,15 @@
 
 .great circle{
     fill:#a50026;
-    size:66px;
     opacity:1;
     stroke: black;
     r:66;
 }
 
 
-g {
-    display:none
-}
+/*g {*/
+/*    display:none*/
+/*}*/
 
 #legend-content {
     align-items: center;
@@ -64,4 +57,6 @@ g {
 
 .legend-item-symbol text{
     text-align: center;
+    font-weight: bold;
+    fill: #000000;
 }

@@ -8,7 +8,7 @@
 		<meta charset="utf-8" />
 		<meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/3.5.17/d3.min.js"></script>
+<script src="https://d3js.org/d3.v5.min.js"></script>
 
 
 		<script src="https://unpkg.com/leaflet@1.5.1/dist/leaflet.js" integrity="sha512-GffPMF3RvMeYyc1LWMHtK8EbPv0iNZ8/oTtHPx9/cc2ILxQ+u905qIwdpULaqDkyBKgOaB57QTMg7ztg8Jm2Og==" crossorigin=""></script>
@@ -18,7 +18,8 @@
 		<script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.0/dist/umd/popper.min.js" integrity="sha384-Q6E9RHvbIyZFJoft+2mJbHaEWldlvI9IOYy5n3zV9zzTtmI3UksdQRVvoxMfooAo" crossorigin="anonymous"></script>
 		<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.0/js/bootstrap.min.js" integrity="sha384-OgVRvuATP1z7JjHLkuOU7Xw704+h835Lr+6QL9UvYjZE3Ipu6Tp75j7Bh/kR0JKI" crossorigin="anonymous"></script>
         <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.0/css/bootstrap.min.css" integrity="sha384-9aIt2nRpC12Uk9gS9baDl411NQApFmC26EwAOH8WgZl5MYYxFfc+NcPb1dKGj7Sk" crossorigin="anonymous">
-		<link id="map_css" rel="stylesheet" type="text/css" href="styles/map.css">
+		<link rel="stylesheet" type="text/css" href="styles/map.css">
+		<link rel="stylesheet" type="text/css" href="styles/chart.css">
 
 
 	</head>
@@ -57,7 +58,7 @@
 							<input class="form-control" type="date" value="2001-01-08" id="to-date-input">
 						  </div>
 						</div>
-						<button class="btn btn-primary btn-sm" type="submit">Submit</button>
+						<button class="btn btn-primary btn-sm" type="submit" id="submit-dates">Submit</button>
 					</div>
 
 					<div class="slider-dates-container side-bar-item">
@@ -70,16 +71,19 @@
 						</div>
 					</div>
 
-
 					<div class="col-sm" id="legend"></div>
 
 				</div>
-
-			<div class="col-sm" id="chart"></div>
-
-
 			</div>
+
+			<div class="col-sm-6" id="stats">
+		 		<div id="chart"></div>
+			</div>
+
 		</div>
+
+
+
 	 </div>
 
 
