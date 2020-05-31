@@ -59,7 +59,7 @@ function objectsMapper(data) {
 
     // order svg group
     var svg = d3.select("#map").select("svg").attr("id", "svgMap")
-    var mag_reordered = magContents();
+    var mag_reordered = Object.keys(magContents());
     mag_reordered.forEach(function (mag_cat, index) {
         var g = svg.append("g")
         g.attr("class", mag_cat)
@@ -107,7 +107,7 @@ function objectsCharted(chart_data) {
     }
 
     chart_data.forEach(function (feature, i) {
-        feature.count = sum(feature, magContents())
+        feature.count = sum(feature, Object.keys(magContents()))
     })
     var data = chart_data
 
@@ -130,8 +130,8 @@ function objectsCharted(chart_data) {
     var z = d3.scaleOrdinal()
         .range(["#98abc5", "#8a89a6", "#7b6888", "#6b486b", "#a05d56", "#d0743c", "#ff8c00"]);
 
-    var columns = magContents();
-    var keys = magContents().reverse();
+    var columns = Object.keys(magContents());
+    var keys = columns.reverse();
 
     data.sort(function(a, b) { return b.total - a.total; });
     x.domain(data.map(function(d,i) { return i; }));
@@ -154,7 +154,7 @@ function objectsCharted(chart_data) {
     g.append("g")
         .attr("class", "x axis")
         .attr("transform", "translate(0," + height + ")")
-        .call(d3.axisBottom(x).tickFormat(function(d,i) { return data[i].place}))
+        .call(d3.axisBottom(x).tickFormat(function(d,i) { return data[i].country}))
       .selectAll("text")
         .attr("y", 0)
         .attr("x", 9)
@@ -205,31 +205,31 @@ function transform_coords(d) {
            coor.y + ")";
 }
 
-function magContents() {
-    // TODO add r value
-    return ['great', 'major', 'strong', 'moderate', 'light', 'minor']
-}
+// function magContents() {
+//     // TODO add r value
+//     return ['great', 'major', 'strong', 'moderate', 'light', 'minor']
+// }
 
-function magContentsR() {
+function magContents() {
 
     return {
         'great': {
-            "r": 60,
+            "r": 50,
         },
         'major': {
-            "r": 42,
+            "r": 40,
         },
         'strong': {
             "r": 30,
         },
         'moderate': {
-            "r": 16,
+            "r": 24,
         },
         'light': {
-            "r": 8,
+            "r": 12,
         },
         'minor': {
-            "r": 6,
+            "r": 5,
         },
     }
 }
@@ -246,7 +246,7 @@ function createLegend(width, height) {
     legend_item_svg.setAttribute("viewBox", `-10 -10 ${width} ${width}`)
     legend_item_svg.setAttribute("class", `svgLegend`)
 
-    var mag_reordered = magContents();
+    var mag_reordered = Object.keys(magContents());
 
     mag_reordered.forEach(function (mag_cat, index) {
         // group
@@ -323,8 +323,8 @@ function animateCircle(features) {
             var rAnim =document.createElementNS("http://www.w3.org/2000/svg", 'animate');
             rAnim.setAttribute("attributeName","r");
             // TODO add real r value
-            rAnim.setAttribute("from",magContentsR()[feature_mag].r);
-            rAnim.setAttribute("to", magContentsR()[feature_mag].r * 1.5);
+            rAnim.setAttribute("from",magContents()[feature_mag].r);
+            rAnim.setAttribute("to", magContents()[feature_mag].r * 1.5);
             rAnim.setAttribute("dur","1.5s");
             rAnim.setAttribute("begin","0s");
             rAnim.setAttribute("repeatCount","indefinite");
