@@ -159,11 +159,11 @@ function objectsCharted(chart_data) {
 
     var margin = {top: 20, right: 50, bottom: 30, left: 20};
     var width = width - margin.left - margin.right;
-    var height = height - margin.top - margin.bottom;
+    var height = height - margin.top - margin.bottom - 50;
     var svg = d3.select("#chart")
         .append("svg")
         .attr("id", "svgChart")
-        .attr("viewBox", `-10 -10 ${width} ${width}`)
+        .attr("viewBox", `0 0 ${width} ${height}`)
     var g = svg.append("g").attr("transform", "translate(" + margin.left + "," + margin.top + ")");
 
     var x = d3.scaleBand()
