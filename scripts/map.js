@@ -210,6 +210,32 @@ function magContents() {
     return ['great', 'major', 'strong', 'moderate', 'light', 'minor']
 }
 
+function magContentsR() {
+
+    return {
+        'great': {
+            "r": 60,
+        },
+        'major': {
+            "r": 42,
+        },
+        'strong': {
+            "r": 30,
+        },
+        'moderate': {
+            "r": 16,
+        },
+        'light': {
+            "r": 8,
+        },
+        'minor': {
+            "r": 6,
+        },
+    }
+}
+
+
+
 function createLegend(width, height) {
     var svgNS = "http://www.w3.org/2000/svg";
     var divis = 2
@@ -244,7 +270,6 @@ function createLegend(width, height) {
     })
     $('#legend-content').append(legend_item_svg)
 }
-
 
 
 $('.dropdown-menu a').click(function () {
@@ -294,12 +319,12 @@ function animateCircle(features) {
     features.toArray().forEach(function(feature, index) {
         var feature_mag = $(feature)[0].__data__.mag_cat;
 
-        if (['great', 'major', 'strong'].includes(feature_mag)) {
+        if (['great', 'major'].includes(feature_mag)) {
             var rAnim =document.createElementNS("http://www.w3.org/2000/svg", 'animate');
             rAnim.setAttribute("attributeName","r");
             // TODO add real r value
-            rAnim.setAttribute("from","30");
-            rAnim.setAttribute("to","60");
+            rAnim.setAttribute("from",magContentsR()[feature_mag].r);
+            rAnim.setAttribute("to", magContentsR()[feature_mag].r * 1.5);
             rAnim.setAttribute("dur","1.5s");
             rAnim.setAttribute("begin","0s");
             rAnim.setAttribute("repeatCount","indefinite");
@@ -317,20 +342,6 @@ function animateCircle(features) {
     })
 }
 
-// $("#mySlider").click(function() {
-//     var currentDate = parseInt(this.value)
-//
-//     var timeScaleValue = 86400000
-//     var timeScaleMode = $('.dropdown').find("button").text()
-//     if (timeScaleMode === "Monthly") {
-//         timeScaleValue = findMonthDaysFromDate(new Date(currentDate)) * timeScaleValue
-//         var nextCurrentDate = currentDate + timeScaleValue
-//         filterCircleByScaleTimeMode(currentDate, nextCurrentDate)
-//     } else if (timeScaleMode === "Daily") {
-//         var nextCurrentDate = currentDate + timeScaleValue
-//         filterCircleByScaleTimeMode(currentDate, nextCurrentDate)
-//     }
-// })
 
 $("#submit-dates").click(function() {
     $("#map").attr('loaded', "ok")
