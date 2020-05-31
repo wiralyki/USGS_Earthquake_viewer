@@ -96,6 +96,52 @@ function objectsCharted(chart_data) {
     var width = 900
     var height = 300
 
+    function div_tootltip_content(d) {
+        var div = document.createElement('div');
+        div.setAttribute("class", "chart-tooltip-content")
+
+        var title = document.createElement('h6');
+        title.innerHTML = d.country
+        div.append(title)
+
+        document.createElement('h6');
+        var listObject = document.createElement('ul');
+
+        var listItem = document.createElement('li');
+        listItem.innerHTML = "Minor: " + d.minor
+        listObject.append(listItem);
+
+        var listItem = document.createElement('li');
+        listItem.innerHTML = "Light: " + d.light
+        listObject.append(listItem);
+
+        var listItem = document.createElement('li');
+        listItem.innerHTML = "Moderate: " + d.moderate
+        listObject.append(listItem);
+
+        var listItem = document.createElement('li');
+        listItem.innerHTML = "Strong: " + d.strong
+        listObject.append(listItem);
+
+        var listItem = document.createElement('li');
+        listItem.innerHTML = "Major: " + d.major
+        listObject.append(listItem);
+
+        var listItem = document.createElement('li');
+        listItem.innerHTML = "Great: " + d.great
+        listObject.append(listItem);
+        // d.data.minor
+        // d.data.light
+        // d.data.moderate
+        // d.data.strong
+        // d.data.major
+        // d.data.great
+
+        div.append(listObject)
+        return div
+    }
+
+
     function sum( obj, keys ) {
       var sum = 0;
       for( var el in obj ) {
@@ -138,6 +184,11 @@ function objectsCharted(chart_data) {
     y.domain([0, d3.max(data, function(d) { return d.count; })]).nice();
     z.domain(keys);
 
+    // Define the div for the tooltip
+    var div = d3.select("body").append("div")
+        .attr("class", "chart-tooltip")
+        .style("opacity", 0);
+
     g.append("g")
         .selectAll("g")
         .data(d3.stack().keys(keys)(data))
@@ -146,10 +197,30 @@ function objectsCharted(chart_data) {
         .selectAll("rect")
         .data(function(d) { return d; })
         .enter().append("rect")
-          .attr("x", function(d,i) { return x(i); })
-          .attr("y", function(d) { return y(d[1]); })
-          .attr("height", function(d) { return y(d[0]) - y(d[1]); })
-          .attr("width", x.bandwidth());
+            .attr("x", function(d,i) { return x(i); })
+            .attr("y", function(d) { return y(d[1]); })
+            .attr("height", function(d) { return y(d[0]) - y(d[1]); })
+            .attr("width", x.bandwidth())
+            .on("mouseover", function(d) {
+                div.transition()
+                    .duration(200)
+                div.html(div_tootltip_content(d.data).outerHTML)
+                    .style("opacity", 1)
+                    .style("position", "absolute")
+                    .style("fill", "ghostwhite")
+            })
+            .on("mouseout", function(d) {
+                div.transition()
+                    .duration(500)
+                    .style("position", "absolute")
+                    .style("opacity", 0);
+            })
+            .on('mousemove', function() {
+                d3.select('.chart-tooltip')
+                    .style("position", "absolute")
+                    .style('left', (d3.event.pageX + 30) + 'px')
+                    .style('top', (d3.event.pageY + 10) + 'px')
+            });
 
     g.append("g")
         .attr("class", "x axis")

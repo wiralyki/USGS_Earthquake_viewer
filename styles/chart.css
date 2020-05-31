@@ -47,3 +47,7 @@ fill: brown;
   stroke: #000;
   shape-rendering: crispEdges;
 }
+
+.chart-tooltip-content {
+    background-color: ghostwhite;
+}
