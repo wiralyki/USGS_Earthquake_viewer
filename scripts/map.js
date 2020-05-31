@@ -13,9 +13,6 @@ var map = L.map(
 ).addLayer(background_map).setView([44.896741, 4.932861], 6)
 setTimeout(function () { map.invalidateSize() }, 800);
 
-var featuresData = []
-
-
 
 function get_data_from_usgs(start_date, end_date) {
     var url_build = `http://127.0.0.1:5000/api/v1/mapdata?start_date=${start_date}&end_date=${end_date}&min_lat=${map.getBounds().getSouth()}&max_lat=${map.getBounds().getNorth()}&min_lng=${map.getBounds().getWest()}&max_lng=${map.getBounds().getEast()}`;
@@ -25,8 +22,8 @@ function get_data_from_usgs(start_date, end_date) {
         async: true,
         success: function (result) {
 
-            var mapData = result["map_data"];
-            var chartData = result["chart_data"];
+            const mapData = result["map_data"];
+            const chartData = result["chart_data"];
 
             objectsMapper(mapData)
             objectsCharted(chartData)
@@ -37,6 +34,7 @@ function get_data_from_usgs(start_date, end_date) {
 
 
 function objectsMapper(data) {
+    console.log(data)
     data.forEach(function (feature, i) {
         feature.LatLng = new L.LatLng(
             feature.y,
@@ -47,16 +45,14 @@ function objectsMapper(data) {
     data.forEach(function (feature, i) {
         feature.time = dateToSecs(new Date(feature.time))
     })
-
-    featuresData.push(data)
-
-    let data_grouped = data.reduce((data, feature) => {
+    var data_grouped = {}
+    data_grouped = data.reduce((data, feature) => {
         data[feature.mag_cat] = data[feature.mag_cat] || [];
         data[feature.mag_cat].push(feature);
         return data;
     }, {});
 
-
+    console.log(data_grouped)
     /* Initialize the SVG layer */
     var svgLayer = L.svg();
     svgLayer.addTo(map);
@@ -92,6 +88,8 @@ function objectsMapper(data) {
             });
         })
     }
+    var svgCircle = $("#map").find("circle")
+    animateCircle(svgCircle)
 }
 
 function objectsCharted(chart_data) {
@@ -263,9 +261,18 @@ $("#mySlider").change(function() {
     var timeScaleMode = $('.dropdown').find("button").text()
     if (timeScaleMode === "Monthly") {
         timeScaleValue = findMonthDaysFromDate(new Date(currentDate)) * timeScaleValue
+        var nextCurrentDate = currentDate + timeScaleValue
+        filterCircleByScaleTimeMode(currentDate, nextCurrentDate)
+    } else if (timeScaleMode === "Daily") {
+        var nextCurrentDate = currentDate + timeScaleValue
+        filterCircleByScaleTimeMode(currentDate, nextCurrentDate)
     }
 
-    var nextCurrentDate = currentDate + timeScaleValue
+})
+
+
+function filterCircleByScaleTimeMode(currentDate, nextCurrentDate) {
+    // var nextCurrentDate = currentDate + timeScaleValue
 
     $("#slider-value").text(secsToDate(currentDate));
 
@@ -278,6 +285,13 @@ $("#mySlider").change(function() {
     var svgCircleToDisplay = svgCircle.filter(index => parseInt($(svgCircle[index]).attr('time')) >= currentDate && parseInt($(svgCircle[index]).attr('time')) < nextCurrentDate);
     console.log(svgCircleToDisplay.toArray().length)
     svgCircleToDisplay.toArray().forEach(function(feature, index) {
+        $(feature).attr("class", "displayed")
+    })
+    animateCircle(svgCircleToDisplay)
+}
+
+function animateCircle(features) {
+    features.toArray().forEach(function(feature, index) {
         var feature_mag = $(feature)[0].__data__.mag_cat;
 
         if (['great', 'major', 'strong'].includes(feature_mag)) {
@@ -299,16 +313,26 @@ $("#mySlider").change(function() {
             opacityAnim.setAttribute("begin","0s");
             opacityAnim.setAttribute("repeatCount","indefinite");
             $(feature).append(opacityAnim)
-        } else {
-            $(feature).attr("class", "displayed")
         }
     })
+}
 
-})
+// $("#mySlider").click(function() {
+//     var currentDate = parseInt(this.value)
+//
+//     var timeScaleValue = 86400000
+//     var timeScaleMode = $('.dropdown').find("button").text()
+//     if (timeScaleMode === "Monthly") {
+//         timeScaleValue = findMonthDaysFromDate(new Date(currentDate)) * timeScaleValue
+//         var nextCurrentDate = currentDate + timeScaleValue
+//         filterCircleByScaleTimeMode(currentDate, nextCurrentDate)
+//     } else if (timeScaleMode === "Daily") {
+//         var nextCurrentDate = currentDate + timeScaleValue
+//         filterCircleByScaleTimeMode(currentDate, nextCurrentDate)
+//     }
+// })
 
-
-
-$("#submit-dates").click(function(){
+$("#submit-dates").click(function() {
     $("#map").attr('loaded', "ok")
 
     $("#map").find("svg").remove()
@@ -321,6 +345,12 @@ $("#submit-dates").click(function(){
     get_data_from_usgs(start_date, end_date);
     if ($(".svgLegend").length === 0) {
         createLegend(100, 100)
+    }
+
+    var timeScaleMode = $('.dropdown').find("button").text()
+    if (timeScaleMode !== "Interval selected") {
+        $(".slider-dates-container").css('pointer-events', "auto")
+        $(".slider-dates-container").css('opacity', 1)
     }
 
 });
@@ -352,12 +382,14 @@ function initializeSlider(start_date, end_date) {
         timeScaleValue = findMonthDaysFromDate(date) * timeScaleValue
     }
 
+    if (["Daily", "Monthly"].includes(timeScaleMode)) {
+        $("#mySlider").attr('min', dateToSecs(start_date))
+        $("#mySlider").attr('max', dateToSecs(end_date))
+        $("#mySlider").attr('step', timeScaleValue)
+        $("#mySlider").attr('value', dateToSecs(start_date))
+        $("#slider-value").text(start_date);
 
-    $("#mySlider").attr('min', dateToSecs(start_date))
-    $("#mySlider").attr('max', dateToSecs(end_date))
-    $("#mySlider").attr('step', timeScaleValue)
-    $("#mySlider").attr('value', dateToSecs(start_date))
-    $("#slider-value").text(start_date);
+    }
 }
 
 

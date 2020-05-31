@@ -33,9 +33,10 @@ svg {
 }
 
 .pickup-dates-container {
+
 }
 
 .slider-dates-container {
+    pointer-events: none;
+    opacity: 0.5;
 }
-
-
