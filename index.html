@@ -63,6 +63,16 @@
 
 					<div class="slider-dates-container side-bar-item">
 						<h4>Visualize the evolution:</h4>
+
+						<div class="dropdown">
+							<button id="button-time-scale" type="button" class="btn btn-primary dropdown-toggle" data-toggle="dropdown">Daily</button>
+							<div class="dropdown-menu" id="SelectMe">
+								<a class="dropdown-item" href="#">Daily</a>
+								<a class="dropdown-item" href="#">Monthly</a>
+							</div>
+						</div>
+
+
 						 <div class="col-sm" id="time-slider">
 							<div class="range range-primary">
 								<input type="range" class="custom-range" min="1980" max="2019" value="2000" step="1" class="slider" id="mySlider">
@@ -71,12 +81,14 @@
 						</div>
 					</div>
 
-					<div class="col-sm" id="legend"></div>
+					<div class="col-sm" id="legend">
+						<div id="legend-content"></div>
+					</div>
 
 				</div>
 			</div>
 
-			<div class="col-sm-6" id="stats">
+			<div class="col-sm-8" id="stats">
 		 		<div id="chart"></div>
 			</div>
 

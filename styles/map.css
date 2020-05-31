@@ -1,43 +1,66 @@
 .minor circle{
     fill:#d9ef8b;
-    opacity:1;
+    /*opacity:1;*/
     stroke: black;
     r:6;
 }
 
 .light circle{
     fill:#fee08b;
-    opacity:1;
+    /*opacity:1;*/
     stroke: black;
-    r:10;
+    r:8;
 }
 
 .moderate circle{
     fill: #fdae61;
-    opacity: 1;
+    /*opacity: 1;*/
     stroke: black;
-    r:18;
+    r:16;
 }
 
 .strong circle{
     fill:#f46d43;
-    opacity:1;
+    /*opacity:1;*/
     stroke: black;
     r:30;
 }
 
 .major circle{
     fill:#d73027;
-    opacity:1;
+    /*opacity:1;*/
     stroke: black;
-    r:46;
+    r:42;
 }
 
 .great circle{
     fill:#a50026;
-    opacity:1;
+    /*opacity:1;*/
     stroke: black;
-    r:66;
+    r:60;
+}
+
+.hidden {
+    opacity:0;
+}
+
+.displayed {
+    opacity:1;
+}
+
+
+.pulsating {
+    -webkit-animation: pulsate 1s ease-out;
+    -webkit-animation-iteration-count: infinite;
+}
+
+@-webkit-keyframes pulsate {
+     0% {
+        opacity: 0;
+     }
+     100% {
+        opacity: 1;
+     }
 }
 
 
@@ -46,17 +69,17 @@
 /*}*/
 
 #legend-content {
-    align-items: center;
-    padding-left: 10%;
-    padding-top: 15%;
+    width: 15%;
 }
 
-.legend-item-symbol circle{
-    text-align: center;
+.svgLegend {
+    width: auto;
 }
 
-.legend-item-symbol text{
+.legend-item-symbol {
     text-align: center;
     font-weight: bold;
     fill: #000000;
+    height: 15%;
+    width: 10%;
 }

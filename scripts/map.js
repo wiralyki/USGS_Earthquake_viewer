@@ -13,6 +13,9 @@ var map = L.map(
 ).addLayer(background_map).setView([44.896741, 4.932861], 6)
 setTimeout(function () { map.invalidateSize() }, 800);
 
+var featuresData = []
+
+
 
 function get_data_from_usgs(start_date, end_date) {
     var url_build = `http://127.0.0.1:5000/api/v1/mapdata?start_date=${start_date}&end_date=${end_date}&min_lat=${map.getBounds().getSouth()}&max_lat=${map.getBounds().getNorth()}&min_lng=${map.getBounds().getWest()}&max_lng=${map.getBounds().getEast()}`;
@@ -40,6 +43,12 @@ function objectsMapper(data) {
             feature.x
         )
     })
+
+    data.forEach(function (feature, i) {
+        feature.time = dateToSecs(new Date(feature.time))
+    })
+
+    featuresData.push(data)
 
     let data_grouped = data.reduce((data, feature) => {
         data[feature.mag_cat] = data[feature.mag_cat] || [];
@@ -70,6 +79,10 @@ function objectsMapper(data) {
             .attr("transform", function (d, i) {
                 return transform_coords(d);
             })
+            .attr("time", function (d, i) {
+                return d.time;
+            })
+            .attr("class", "displayed")
 
         var time_between_each_object = 100;
         var fade_speed = 1000;
@@ -187,8 +200,6 @@ function objectsCharted(chart_data) {
 
 }
 
-
-
 function transform_coords(d) {
     var coor = map.latLngToLayerPoint(d.LatLng);
        return "translate(" +
@@ -196,112 +207,172 @@ function transform_coords(d) {
            coor.y + ")";
 }
 
-
 function magContents() {
-
+    // TODO add r value
     return ['great', 'major', 'strong', 'moderate', 'light', 'minor']
 }
 
 function createLegend(width, height) {
     var svgNS = "http://www.w3.org/2000/svg";
     var divis = 2
-    var width = 30;
-    var height = 30;
+    var svgTextELementSep = 70
+    var svgELementSep = 20
 
-    // legend
-    var legend_div = document.createElement('div');
-    legend_div.setAttribute("id", "legend-content");
-    legend_div.setAttribute("class","legend-container row")
-
-    // create legend item div
-    var legend_item_div = document.createElement('div');
-    legend_item_div.setAttribute("id", "legend-item-div");
-    legend_item_div.setAttribute("class","col-sm")
+    var legend_item_svg = document.createElementNS(svgNS,'svg');
+    legend_item_svg.setAttribute("viewBox", `-10 -10 ${width} ${width}`)
+    legend_item_svg.setAttribute("class", `svgLegend`)
 
     var mag_reordered = magContents();
+
     mag_reordered.forEach(function (mag_cat, index) {
+        // group
+        var group = document.createElementNS(svgNS,'g');
+        group.setAttribute("class", mag_cat)
 
-
-        // create symbol div
-        var legend_item_symbol = document.createElement('div');
-        legend_item_symbol.setAttribute("class","legend-item-symbol col-sm")
-        // svg
-        var legend_item_svg = document.createElementNS(svgNS,'svg');
-        legend_item_svg.setAttribute("height", width)
-        legend_item_svg.setAttribute("width", width)
-        legend_item_svg.setAttribute("class", mag_cat)
         // dot
         var svgCircle = document.createElementNS(svgNS,"circle");
         svgCircle.setAttributeNS(null,"cx", width / divis);
-        svgCircle.setAttributeNS(null,"cy", height / divis);
-        legend_item_svg.append(svgCircle);
+        svgCircle.setAttributeNS(null,"cy", height / divis + index * svgELementSep);
+        group.append(svgCircle);
         // text
         var svgText = document.createElementNS(svgNS,"text");
-        svgText.setAttribute("x", (width / divis) + width * 2.5);
-        svgText.setAttribute("y", height / divis);
+        svgText.setAttribute("x", width / divis + svgTextELementSep);
+        svgText.setAttribute("y", height / divis + index * svgELementSep);
         svgText.setAttribute("alignment-baseline", "middle")
         svgText.innerHTML = mag_cat
-        legend_item_svg.append(svgText);
+        group.append(svgText);
 
-
-        legend_item_symbol.append(legend_item_svg)
-        legend_item_div.append(legend_item_symbol)
-        legend_div.append(legend_item_div)
+        legend_item_svg.append(group)
     })
-    $('#legend').append(legend_div)
+    $('#legend-content').append(legend_item_svg)
 }
 
 
 
-
-// slider processing
-var slider = document.getElementById("mySlider");
-slider.max = 2020
-slider.min = 1980
-// slider.value = 2000
-
-
-
-// output.innerHTML = slider.value; // Display the default slider value
+$('.dropdown-menu a').click(function () {
+    $("#button-time-scale").text($(this).text());
+});
 
 // Update the current slider value (each time you drag the slider handle)
-// slider.oninput = function() {
-//     var output = $("from-date-input");
-//
-//   $("#slider-value").text(this.value);
-//   $("svg").find("g").remove();
-//   getDataAddMarkers(this.value, map)
-// }
+$("#mySlider").change(function() {
+    $("#mySlider").attr('value', this.value)
 
-createLegend(1, 1)
+    var currentDate = parseInt(this.value)
+
+    var timeScaleValue = 86400000
+    var timeScaleMode = $('.dropdown').find("button").text()
+    if (timeScaleMode === "Monthly") {
+        timeScaleValue = findMonthDaysFromDate(new Date(currentDate)) * timeScaleValue
+    }
+
+    var nextCurrentDate = currentDate + timeScaleValue
+
+    $("#slider-value").text(secsToDate(currentDate));
+
+    var svgCircle = $("#map").find("circle")
+    svgCircle.toArray().forEach(function(feature, index) {
+        $(feature).attr("class", "hidden")
+        $(feature).empty()
+    })
+
+    var svgCircleToDisplay = svgCircle.filter(index => parseInt($(svgCircle[index]).attr('time')) >= currentDate && parseInt($(svgCircle[index]).attr('time')) < nextCurrentDate);
+    console.log(svgCircleToDisplay.toArray().length)
+    svgCircleToDisplay.toArray().forEach(function(feature, index) {
+        var feature_mag = $(feature)[0].__data__.mag_cat;
+
+        if (['great', 'major', 'strong'].includes(feature_mag)) {
+            var rAnim =document.createElementNS("http://www.w3.org/2000/svg", 'animate');
+            rAnim.setAttribute("attributeName","r");
+            // TODO add real r value
+            rAnim.setAttribute("from","30");
+            rAnim.setAttribute("to","60");
+            rAnim.setAttribute("dur","1.5s");
+            rAnim.setAttribute("begin","0s");
+            rAnim.setAttribute("repeatCount","indefinite");
+            $(feature).append(rAnim)
+
+            var opacityAnim =document.createElementNS("http://www.w3.org/2000/svg", 'animate');
+            opacityAnim.setAttribute("attributeName","opacity");
+            opacityAnim.setAttribute("from","1");
+            opacityAnim.setAttribute("to","0");
+            opacityAnim.setAttribute("dur","1.5s");
+            opacityAnim.setAttribute("begin","0s");
+            opacityAnim.setAttribute("repeatCount","indefinite");
+            $(feature).append(opacityAnim)
+        } else {
+            $(feature).attr("class", "displayed")
+        }
+    })
+
+})
+
+
 
 $("#submit-dates").click(function(){
+    $("#map").attr('loaded', "ok")
 
-   $("#map").find("svg").remove()
-   $("#chart").find("svg").remove()
-   var start_date = $("#from-date-input").val();
-   var end_date = $("#to-date-input").val();
-    alert(start_date + " " + end_date);
-   get_data_from_usgs(start_date, end_date);
+    $("#map").find("svg").remove()
+    $("#chart").find("svg").remove()
+    var start_date = $("#from-date-input").val();
+    var end_date = $("#to-date-input").val();
 
+    initializeSlider(start_date, end_date);
+    console.log(start_date)
+    get_data_from_usgs(start_date, end_date);
+    if ($(".svgLegend").length === 0) {
+        createLegend(100, 100)
+    }
 
 });
 
 
 map.on("moveend", function(s){
-   $("#map").find("svg").remove()
-   $("#chart").find("svg").remove()
-   var start_date = $("#from-date-input").val();
-   var end_date = $("#to-date-input").val();
-    get_data_from_usgs(start_date, end_date);
+    if ($("#map").attr('loaded') === "ok") {
+        // only if data has been already added
 
+        $("#map").find("svg").remove();
+        $("#chart").find("svg").remove();
+
+        var start_date = $("#from-date-input").val();
+        var end_date = $("#to-date-input").val();
+        get_data_from_usgs(start_date, end_date);
+        if ($(".svgLegend").length === 0) {
+            createLegend(100, 100)
+        };
+    }
 });
 
 
-function toDateTime(secs) {
-    var t = new Date(1970, 0, 1); // Epoch
-    t.setSeconds(secs);
-    return t;
+function initializeSlider(start_date, end_date) {
+
+    var timeScaleValue = 86400000
+    var timeScaleMode = $('.dropdown').find("button").text()
+    if (timeScaleMode === "Monthly") {
+        var date = new Date(dateToSecs(start_date))
+        timeScaleValue = findMonthDaysFromDate(date) * timeScaleValue
+    }
+
+
+    $("#mySlider").attr('min', dateToSecs(start_date))
+    $("#mySlider").attr('max', dateToSecs(end_date))
+    $("#mySlider").attr('step', timeScaleValue)
+    $("#mySlider").attr('value', dateToSecs(start_date))
+    $("#slider-value").text(start_date);
+}
+
+
+function dateToSecs(date) {
+    var date_int = Date.parse(date)
+    return date_int
+}
+
+function secsToDate(date_int) {
+    var date = new Date(date_int).toISOString().split("T")[0]
+    return date
+}
+
+function findMonthDaysFromDate(date) {
+    return new Date(date.getFullYear(), date.getMonth(), 0).getDate();
 }
 
 
