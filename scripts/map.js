@@ -11,6 +11,7 @@ var map = L.map(
         renderer: L.canvas()
     }
 ).addLayer(background_map).setView([44.896741, 4.932861], 6)
+
 setTimeout(function () { map.invalidateSize() }, 800);
 
 
@@ -34,7 +35,7 @@ function get_data_from_usgs(start_date, end_date) {
 
 
 function objectsMapper(data) {
-    console.log(data)
+    // console.log(data)
     data.forEach(function (feature, i) {
         feature.LatLng = new L.LatLng(
             feature.y,
@@ -52,7 +53,7 @@ function objectsMapper(data) {
         return data;
     }, {});
 
-    console.log(data_grouped)
+    // console.log(data_grouped)
     /* Initialize the SVG layer */
     var svgLayer = L.svg();
     svgLayer.addTo(map);
@@ -130,17 +131,10 @@ function objectsCharted(chart_data) {
         var listItem = document.createElement('li');
         listItem.innerHTML = "Great: " + d.great
         listObject.append(listItem);
-        // d.data.minor
-        // d.data.light
-        // d.data.moderate
-        // d.data.strong
-        // d.data.major
-        // d.data.great
 
         div.append(listObject)
         return div
     }
-
 
     function sum( obj, keys ) {
       var sum = 0;
@@ -152,9 +146,9 @@ function objectsCharted(chart_data) {
       return sum;
     }
 
-    chart_data.forEach(function (feature, i) {
-        feature.count = sum(feature, Object.keys(magContents()))
-    })
+    // chart_data.forEach(function (feature, i) {
+    //     feature.count = sum(feature, Object.keys(magContents()))
+    // })
     var data = chart_data
 
     var margin = {top: 20, right: 50, bottom: 30, left: 20};
@@ -184,10 +178,6 @@ function objectsCharted(chart_data) {
     y.domain([0, d3.max(data, function(d) { return d.count; })]).nice();
     z.domain(keys);
 
-    // Define the div for the tooltip
-    var div = d3.select("body").append("div")
-        .attr("class", "chart-tooltip")
-        .style("opacity", 0);
 
     g.append("g")
         .selectAll("g")
@@ -201,7 +191,20 @@ function objectsCharted(chart_data) {
             .attr("y", function(d) { return y(d[1]); })
             .attr("height", function(d) { return y(d[0]) - y(d[1]); })
             .attr("width", x.bandwidth())
+            .style("opacity", "0")
+            .on("click", function(d) {
+                $(".chart-tooltip").remove()
+                map.flyToBounds([
+                  [d.data.bounds[3], d.data.bounds[2]],
+                  [d.data.bounds[1], d.data.bounds[0]],
+                ])
+
+            })
             .on("mouseover", function(d) {
+                // Define the div for the tooltip
+                var div = d3.select("body").append("div")
+                    .attr("class", "chart-tooltip")
+                    .style("opacity", 0);
                 div.transition()
                     .duration(200)
                 div.html(div_tootltip_content(d.data).outerHTML)
@@ -210,17 +213,21 @@ function objectsCharted(chart_data) {
                     .style("fill", "ghostwhite")
             })
             .on("mouseout", function(d) {
-                div.transition()
-                    .duration(500)
-                    .style("position", "absolute")
-                    .style("opacity", 0);
+                $('.chart-tooltip').remove()
             })
             .on('mousemove', function() {
                 d3.select('.chart-tooltip')
                     .style("position", "absolute")
                     .style('left', (d3.event.pageX + 30) + 'px')
-                    .style('top', (d3.event.pageY + 10) + 'px')
+                    .style('top', (d3.event.pageY - 100) + 'px')
             });
+
+    // Animation
+    g.selectAll("rect")
+      .transition()
+      .duration(800)
+      .style("opacity", "1")
+      .delay(function(d,i){console.log(i) ; return(i*100)})
 
     g.append("g")
         .attr("class", "x axis")
@@ -230,8 +237,10 @@ function objectsCharted(chart_data) {
         .attr("y", 0)
         .attr("x", 9)
         .attr("dy", ".35em")
+        .attr("font-size", 8)
         .attr("transform", "rotate(45)")
         .style("text-anchor", "start");
+
 
     g.append("g")
         .attr("class", "y axis")
@@ -275,11 +284,6 @@ function transform_coords(d) {
            coor.x + "," +
            coor.y + ")";
 }
-
-// function magContents() {
-//     // TODO add r value
-//     return ['great', 'major', 'strong', 'moderate', 'light', 'minor']
-// }
 
 function magContents() {
 
@@ -347,20 +351,26 @@ $('.dropdown-menu a').click(function () {
     $("#button-time-scale").text($(this).text());
 });
 
+// todo api output...
+var dates = ["2000-01-01", "2000-02-01", "2000-03-01", "2000-04-01", "2000-05-01", "2000-06-01", "2000-07-01", "2000-08-01", "2000-09-01", "2000-10-01", "2000-11-01", "2000-12-01", "2001-01-01"];
+
+
 // Update the current slider value (each time you drag the slider handle)
 $("#mySlider").change(function() {
-    $("#mySlider").attr('value', this.value)
 
-    var currentDate = parseInt(this.value)
-
-    var timeScaleValue = 86400000
     var timeScaleMode = $('.dropdown').find("button").text()
     if (timeScaleMode === "Monthly") {
-        timeScaleValue = findMonthDaysFromDate(new Date(currentDate)) * timeScaleValue
-        var nextCurrentDate = currentDate + timeScaleValue
-        filterCircleByScaleTimeMode(currentDate, nextCurrentDate)
+
+        var currentDate = dates[this.value]
+        $("#slider-value").text(currentDate);
+        var currentDateInt = dateToSecs(currentDate)
+        var nextCurrentDate = new Date(currentDateInt).setMonth(new Date(currentDateInt).getMonth() + 1);
+        filterCircleByScaleTimeMode(currentDateInt, nextCurrentDate)
+
     } else if (timeScaleMode === "Daily") {
-        var nextCurrentDate = currentDate + timeScaleValue
+        var currentDate = parseInt(this.value)
+        var timeScaleDayValue = 86400000
+        var nextCurrentDate = currentDate + timeScaleDayValue
         filterCircleByScaleTimeMode(currentDate, nextCurrentDate)
     }
 
@@ -368,10 +378,6 @@ $("#mySlider").change(function() {
 
 
 function filterCircleByScaleTimeMode(currentDate, nextCurrentDate) {
-    // var nextCurrentDate = currentDate + timeScaleValue
-
-    $("#slider-value").text(secsToDate(currentDate));
-
     var svgCircle = $("#map").find("circle")
     svgCircle.toArray().forEach(function(feature, index) {
         $(feature).attr("class", "hidden")
@@ -379,7 +385,6 @@ function filterCircleByScaleTimeMode(currentDate, nextCurrentDate) {
     })
 
     var svgCircleToDisplay = svgCircle.filter(index => parseInt($(svgCircle[index]).attr('time')) >= currentDate && parseInt($(svgCircle[index]).attr('time')) < nextCurrentDate);
-    console.log(svgCircleToDisplay.toArray().length)
     svgCircleToDisplay.toArray().forEach(function(feature, index) {
         $(feature).attr("class", "displayed")
     })
@@ -390,10 +395,9 @@ function animateCircle(features) {
     features.toArray().forEach(function(feature, index) {
         var feature_mag = $(feature)[0].__data__.mag_cat;
 
-        if (['great', 'major'].includes(feature_mag)) {
+        if (['great', 'major', 'strong'].includes(feature_mag)) {
             var rAnim =document.createElementNS("http://www.w3.org/2000/svg", 'animate');
             rAnim.setAttribute("attributeName","r");
-            // TODO add real r value
             rAnim.setAttribute("from",magContents()[feature_mag].r);
             rAnim.setAttribute("to", magContents()[feature_mag].r * 1.5);
             rAnim.setAttribute("dur","1.5s");
@@ -417,18 +421,22 @@ function animateCircle(features) {
 $("#submit-dates").click(function() {
     $("#map").attr('loaded', "ok")
 
+    // clean svg
     $("#map").find("svg").remove()
     $("#chart").find("svg").remove()
-    var start_date = $("#from-date-input").val();
-    var end_date = $("#to-date-input").val();
 
+    // Init slider
+    let start_date = $("#from-date-input").val();
+    let end_date = $("#to-date-input").val();
     initializeSlider(start_date, end_date);
-    console.log(start_date)
+
+    // get data
     get_data_from_usgs(start_date, end_date);
     if ($(".svgLegend").length === 0) {
         createLegend(100, 100)
     }
 
+    // activate slider dialog if necessary
     var timeScaleMode = $('.dropdown').find("button").text()
     if (timeScaleMode !== "Interval selected") {
         $(".slider-dates-container").css('pointer-events', "auto")
@@ -439,15 +447,20 @@ $("#submit-dates").click(function() {
 
 
 map.on("moveend", function(s){
+
+    $("#map").find("svg").remove();
+    $("#chart").find("svg").remove();
     if ($("#map").attr('loaded') === "ok") {
         // only if data has been already added
 
-        $("#map").find("svg").remove();
-        $("#chart").find("svg").remove();
 
-        var start_date = $("#from-date-input").val();
-        var end_date = $("#to-date-input").val();
+
+        // get data
+        let start_date = $("#from-date-input").val();
+        let end_date = $("#to-date-input").val();
         get_data_from_usgs(start_date, end_date);
+
+        // create legend only if it does not exist
         if ($(".svgLegend").length === 0) {
             createLegend(100, 100)
         };
@@ -457,20 +470,23 @@ map.on("moveend", function(s){
 
 function initializeSlider(start_date, end_date) {
 
-    var timeScaleValue = 86400000
     var timeScaleMode = $('.dropdown').find("button").text()
-    if (timeScaleMode === "Monthly") {
-        var date = new Date(dateToSecs(start_date))
-        timeScaleValue = findMonthDaysFromDate(date) * timeScaleValue
+
+    if (timeScaleMode === "Daily") {
+        let timeScaleDayValue = 86400000
+        $("#mySlider").attr('min', start_date)
+        $("#mySlider").attr('max', end_date)
+        $("#mySlider").attr('step', timeScaleDayValue)
+        $("#mySlider").attr('value', start_date)
+        $("#slider-value").text(secsToDate(start_date));
     }
 
-    if (["Daily", "Monthly"].includes(timeScaleMode)) {
-        $("#mySlider").attr('min', dateToSecs(start_date))
-        $("#mySlider").attr('max', dateToSecs(end_date))
-        $("#mySlider").attr('step', timeScaleValue)
-        $("#mySlider").attr('value', dateToSecs(start_date))
-        $("#slider-value").text(start_date);
-
+    if (timeScaleMode === "Monthly") {
+        $("#mySlider").attr('min', 0)
+        $("#mySlider").attr('max', dates.length - 1)
+        $("#mySlider").attr('step', 1)
+        $("#mySlider").attr('value', 0)
+        $("#slider-value").text(dates[0]);
     }
 }
 
@@ -486,7 +502,8 @@ function secsToDate(date_int) {
 }
 
 function findMonthDaysFromDate(date) {
-    return new Date(date.getFullYear(), date.getMonth(), 0).getDate();
+    var days_month = new Date(date.getFullYear(), date.getMonth() + 1, 0).getDate();
+    return days_month
 }
 
 
