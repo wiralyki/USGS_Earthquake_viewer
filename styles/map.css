@@ -68,18 +68,3 @@
 /*    display:none*/
 /*}*/
 
-#legend-content {
-    width: 15%;
-}
-
-.svgLegend {
-    width: auto;
-}
-
-.legend-item-symbol {
-    text-align: center;
-    font-weight: bold;
-    fill: #000000;
-    height: 15%;
-    width: 10%;
-}

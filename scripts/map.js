@@ -318,7 +318,7 @@ function createLegend(width, height) {
     var svgELementSep = 20
 
     var legend_item_svg = document.createElementNS(svgNS,'svg');
-    legend_item_svg.setAttribute("viewBox", `-10 -10 ${width} ${width}`)
+    legend_item_svg.setAttribute("viewBox", `0 -50 ${width} ${width}`)
     legend_item_svg.setAttribute("class", `svgLegend`)
 
     var mag_reordered = Object.keys(magContents());
@@ -356,9 +356,9 @@ var dates = ["2000-01-01", "2000-02-01", "2000-03-01", "2000-04-01", "2000-05-01
 
 
 // Update the current slider value (each time you drag the slider handle)
-$("#mySlider").change(function() {
+$("#timeSlider").change(function() {
 
-    var timeScaleMode = $('.dropdown').find("button").text()
+    var timeScaleMode = $('.dropdown-time-scale').find("button").text()
     if (timeScaleMode === "Monthly") {
 
         var currentDate = dates[this.value]
@@ -433,11 +433,11 @@ $("#submit-dates").click(function() {
     // get data
     get_data_from_usgs(start_date, end_date);
     if ($(".svgLegend").length === 0) {
-        createLegend(100, 100)
+        createLegend(20, 40)
     }
 
     // activate slider dialog if necessary
-    var timeScaleMode = $('.dropdown').find("button").text()
+    var timeScaleMode = $('.dropdown-time-scale').find("button").text()
     if (timeScaleMode !== "Interval selected") {
         $(".slider-dates-container").css('pointer-events', "auto")
         $(".slider-dates-container").css('opacity', 1)
@@ -462,7 +462,7 @@ map.on("moveend", function(s){
 
         // create legend only if it does not exist
         if ($(".svgLegend").length === 0) {
-            createLegend(100, 100)
+            createLegend(20, 40)
         };
     }
 });
@@ -470,22 +470,22 @@ map.on("moveend", function(s){
 
 function initializeSlider(start_date, end_date) {
 
-    var timeScaleMode = $('.dropdown').find("button").text()
+    var timeScaleMode = $('.dropdown-time-scale').find("button").text()
 
     if (timeScaleMode === "Daily") {
         let timeScaleDayValue = 86400000
-        $("#mySlider").attr('min', start_date)
-        $("#mySlider").attr('max', end_date)
-        $("#mySlider").attr('step', timeScaleDayValue)
-        $("#mySlider").attr('value', start_date)
+        $("#timeSlider").attr('min', start_date)
+        $("#timeSlider").attr('max', end_date)
+        $("#timeSlider").attr('step', timeScaleDayValue)
+        $("#timeSlider").attr('value', start_date)
         $("#slider-value").text(secsToDate(start_date));
     }
 
     if (timeScaleMode === "Monthly") {
-        $("#mySlider").attr('min', 0)
-        $("#mySlider").attr('max', dates.length - 1)
-        $("#mySlider").attr('step', 1)
-        $("#mySlider").attr('value', 0)
+        $("#timeSlider").attr('min', 0)
+        $("#timeSlider").attr('max', dates.length - 1)
+        $("#timeSlider").attr('step', 1)
+        $("#timeSlider").attr('value', 0)
         $("#slider-value").text(dates[0]);
     }
 }
