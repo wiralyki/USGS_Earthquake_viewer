@@ -55,22 +55,21 @@ function objectsMapper(data) {
         title.innerHTML = d.country
         div.append(title)
 
-        var mag = document.createElement('p');
-        mag.innerHTML = d.mag
-        div.append(mag)
+        var element_list = document.createElement('ul');
 
-        var mag_cat = document.createElement('p');
-        mag_cat.innerHTML = d.mag_cat
-        div.append(mag_cat)
+        var mag = document.createElement('li');
+        mag.innerHTML = "Magnitude: " + d.mag_cat + " (" + d.mag + ")"
+        element_list.append(mag)
 
-        var mag_type = document.createElement('p');
-        mag_type.innerHTML = d.magType
-        div.append(mag_type)
+        var mag_type = document.createElement('li');
+        mag_type.innerHTML = "Magnitude type: " + d.magType
+        element_list.append(mag_type)
 
-        var time = document.createElement('p');
-        time.innerHTML = new Date(d.time)
-        div.append(time)
+        var time = document.createElement('li');
+        time.innerHTML = secsToDate(d.time)
+        element_list.append(time)
 
+        div.append(element_list)
         return div
 
     }
@@ -117,12 +116,13 @@ function objectsMapper(data) {
                 .on("mouseover", function(d, i) {
                       // Define the div for the tooltip
                     var div = d3.select("body").append("div")
-                        .attr("class", "popup-feature")
+                        .attr("class", "popup-feature " + d.mag_cat)
                         .style("opacity", 1)
                         .style("position", "absolute")
                         .style('left', (d3.event.pageX) + 'px')
                         .style('top', (d3.event.pageY) + 'px')
                     div.html(div_popup_content(d).outerHTML)
+                    console.log('a')
                 })
                 .on("mouseout", function(d) {
                     $('.popup-feature').remove()

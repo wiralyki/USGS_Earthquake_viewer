@@ -1,35 +1,42 @@
 .minor {
     fill:#d9ef8b;
+    background-color: #d9ef8b;
     opacity:1;
 }
 
 .light {
     fill:#fee08b;
+    background-color: #fee08b;
     opacity:1;
 }
 
 .minor {
     fill:#d9ef8b;
+    background-color: #d9ef8b;
     opacity:1;
 }
 
 .moderate {
     fill: #fdae61;
+    background-color: #fdae61;
     opacity:1;
 }
 
 .strong {
     fill:#f46d43;
+    background-color: #f46d43;
     opacity:1;
 }
 
 .major {
     fill:#d73027;
+    background-color: #d73027;
     opacity:1;
 }
 
 .great {
     fill:#a50026;
+    background-color: #a50026;
     opacity:1;
 }
 
