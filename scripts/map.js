@@ -114,14 +114,16 @@ function objectsMapper(data) {
             .data(data_group)
             .enter().append("circle")
                 .on("mouseover", function(d, i) {
-                      // Define the div for the tooltip
-                    var div = d3.select("body").append("div")
-                        .attr("class", "popup-feature " + d.mag_cat)
-                        .style("opacity", 1)
-                        .style("position", "absolute")
-                        .style('left', (d3.event.pageX) + 'px')
-                        .style('top', (d3.event.pageY) + 'px')
-                    div.html(div_popup_content(d).outerHTML)
+                    if (this.classList[0] === "displayed") {
+                        var div = d3.select("body").append("div")
+                            .attr("class", "popup-feature " + d.mag_cat)
+                            .style("opacity", 1)
+                            .style("position", "absolute")
+                            .style('left', (d3.event.pageX) + 'px')
+                            .style('top', (d3.event.pageY) + 'px')
+                        div.html(div_popup_content(d).outerHTML)
+                    }
+
                     console.log('a')
                 })
                 .on("mouseout", function(d) {
