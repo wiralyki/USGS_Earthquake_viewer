@@ -77,3 +77,15 @@
 .map_legend text {
     fill: #000000;
 }
+
+.leaflet-tile-container {
+    pointer-events: none;
+}
+
+.popup-feature {
+    z-index: 99999;
+    background-color: ghostwhite;
+    border-radius: 25px;
+    padding: 10px;
+    border: 1px solid #000000;
+}

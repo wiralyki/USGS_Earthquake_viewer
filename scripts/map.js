@@ -19,6 +19,8 @@ legend.onAdd = function (map) {
 };
 legend.addTo(map);
 
+var popup = L.popup();
+
 setTimeout(function () { map.invalidateSize() }, 800);
 
 
@@ -44,6 +46,36 @@ function get_data_from_usgs(start_date, end_date) {
 
 
 function objectsMapper(data) {
+
+    function div_popup_content(d) {
+        var div = document.createElement('div');
+        div.setAttribute("class", "popup-feature-content")
+
+        var title = document.createElement('h6');
+        title.innerHTML = d.country
+        div.append(title)
+
+        var mag = document.createElement('p');
+        mag.innerHTML = d.mag
+        div.append(mag)
+
+        var mag_cat = document.createElement('p');
+        mag_cat.innerHTML = d.mag_cat
+        div.append(mag_cat)
+
+        var mag_type = document.createElement('p');
+        mag_type.innerHTML = d.magType
+        div.append(mag_type)
+
+        var time = document.createElement('p');
+        time.innerHTML = new Date(d.time)
+        div.append(time)
+
+        return div
+
+    }
+
+
     // console.log(data)
     data.forEach(function (feature, i) {
         feature.LatLng = new L.LatLng(
@@ -68,7 +100,7 @@ function objectsMapper(data) {
     svgLayer.addTo(map);
 
     // order svg group
-    var svg = d3.select("#map").select("svg").attr("id", "svgMap")
+    var svg = d3.select("#map").select("svg").attr("id", "svgMap").attr("pointer-events", "auto")
     var mag_reordered = Object.keys(magContents());
     mag_reordered.forEach(function (mag_cat, index) {
         var g = svg.append("g")
@@ -79,16 +111,29 @@ function objectsMapper(data) {
         var data_group = data_grouped[mag_cat]
 
         var g = svg.select("." + mag_cat);
-        var _ = g.selectAll("LatLng")
+        var features = g.selectAll("LatLng")
             .data(data_group)
             .enter().append("circle")
-            .attr("transform", function (d, i) {
-                return transform_coords(d);
-            })
-            .attr("time", function (d, i) {
-                return d.time;
-            })
-            .attr("class", "displayed")
+                .on("mouseover", function(d, i) {
+                      // Define the div for the tooltip
+                    var div = d3.select("body").append("div")
+                        .attr("class", "popup-feature")
+                        .style("opacity", 1)
+                        .style("position", "absolute")
+                        .style('left', (d3.event.pageX) + 'px')
+                        .style('top', (d3.event.pageY) + 'px')
+                    div.html(div_popup_content(d).outerHTML)
+                })
+                .on("mouseout", function(d) {
+                    $('.popup-feature').remove()
+                })
+                .attr("transform", function (d, i) {
+                    return transform_coords(d);
+                })
+                .attr("time", function (d, i) {
+                    return d.time;
+                })
+                .attr("class", "displayed")
 
         var time_between_each_object = 100;
         var fade_speed = 1000;
@@ -101,6 +146,12 @@ function objectsMapper(data) {
     var svgCircle = $("#svgMap").find("circle")
     animateCircle(svgCircle)
 }
+
+// $("#svgMap").find("circle").click(function() {
+//   alert( "Handler for .click() called." );
+// });
+
+
 
 function objectsCharted(chart_data) {
     var width = 900
@@ -236,7 +287,7 @@ function objectsCharted(chart_data) {
       .transition()
       .duration(800)
       .style("opacity", "1")
-      .delay(function(d,i){console.log(i) ; return(i*100)})
+      .delay(function(d,i){return(i*100)})
 
     g.append("g")
         .attr("class", "x axis")

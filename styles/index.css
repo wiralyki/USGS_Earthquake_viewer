@@ -45,7 +45,7 @@ svg {
 .slider-dates-container {
     pointer-events: none;
     opacity: 0.5;
-height: 36%;
+    height: 36%;
 }
 
 .current-date-title {
