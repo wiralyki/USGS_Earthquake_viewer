@@ -68,3 +68,12 @@
 /*    display:none*/
 /*}*/
 
+.map_legend {
+    border-radius: 25px;
+    padding: 10px;
+    width: 35%;
+}
+
+.map_legend text {
+    fill: #000000;
+}

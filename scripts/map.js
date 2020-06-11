@@ -12,7 +12,16 @@ var map = L.map(
     }
 ).addLayer(background_map).setView([44.896741, 4.932861], 6)
 
+var legend = L.control({position: 'bottomright'});
+legend.onAdd = function (map) {
+    var div = L.DomUtil.create('div', 'map_legend')
+    return div
+};
+legend.addTo(map);
+
 setTimeout(function () { map.invalidateSize() }, 800);
+
+
 
 
 function get_data_from_usgs(start_date, end_date) {
@@ -89,7 +98,7 @@ function objectsMapper(data) {
             });
         })
     }
-    var svgCircle = $("#map").find("circle")
+    var svgCircle = $("#svgMap").find("circle")
     animateCircle(svgCircle)
 }
 
@@ -312,13 +321,14 @@ function magContents() {
 
 
 function createLegend(width, height) {
+    $(".map_legend").css("background-color", "ghostwhite")
+
     var svgNS = "http://www.w3.org/2000/svg";
     var divis = 2
     var svgTextELementSep = 70
     var svgELementSep = 20
 
     var legend_item_svg = document.createElementNS(svgNS,'svg');
-    legend_item_svg.setAttribute("viewBox", `0 -50 ${width} ${width}`)
     legend_item_svg.setAttribute("class", `svgLegend`)
 
     var mag_reordered = Object.keys(magContents());
@@ -343,7 +353,9 @@ function createLegend(width, height) {
 
         legend_item_svg.append(group)
     })
-    $('#legend-content').append(legend_item_svg)
+    // $('#legend-content').append(legend_item_svg)
+    $('.map_legend').append(legend_item_svg)
+
 }
 
 
@@ -378,7 +390,7 @@ $("#timeSlider").change(function() {
 
 
 function filterCircleByScaleTimeMode(currentDate, nextCurrentDate) {
-    var svgCircle = $("#map").find("circle")
+    var svgCircle = $("#svgMap").find("circle")
     svgCircle.toArray().forEach(function(feature, index) {
         $(feature).attr("class", "hidden")
         $(feature).empty()
@@ -396,7 +408,7 @@ function animateCircle(features) {
         var feature_mag = $(feature)[0].__data__.mag_cat;
 
         if (['great', 'major', 'strong'].includes(feature_mag)) {
-            var rAnim =document.createElementNS("http://www.w3.org/2000/svg", 'animate');
+            var rAnim = document.createElementNS("http://www.w3.org/2000/svg", 'animate');
             rAnim.setAttribute("attributeName","r");
             rAnim.setAttribute("from",magContents()[feature_mag].r);
             rAnim.setAttribute("to", magContents()[feature_mag].r * 1.5);
@@ -432,9 +444,7 @@ $("#submit-dates").click(function() {
 
     // get data
     get_data_from_usgs(start_date, end_date);
-    if ($(".svgLegend").length === 0) {
-        createLegend(20, 40)
-    }
+    createLegend(100, 100)
 
     // activate slider dialog if necessary
     var timeScaleMode = $('.dropdown-time-scale').find("button").text()
@@ -461,9 +471,8 @@ map.on("moveend", function(s){
         get_data_from_usgs(start_date, end_date);
 
         // create legend only if it does not exist
-        if ($(".svgLegend").length === 0) {
-            createLegend(20, 40)
-        };
+        createLegend(100, 100)
+
     }
 });
 
