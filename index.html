@@ -8,7 +8,7 @@
 		<meta charset="utf-8" />
 		<meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/3.5.17/d3.min.js"></script>
+<script src="https://d3js.org/d3.v5.min.js"></script>
 
 
 		<script src="https://unpkg.com/leaflet@1.5.1/dist/leaflet.js" integrity="sha512-GffPMF3RvMeYyc1LWMHtK8EbPv0iNZ8/oTtHPx9/cc2ILxQ+u905qIwdpULaqDkyBKgOaB57QTMg7ztg8Jm2Og==" crossorigin=""></script>
@@ -18,6 +18,8 @@
 		<script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.0/dist/umd/popper.min.js" integrity="sha384-Q6E9RHvbIyZFJoft+2mJbHaEWldlvI9IOYy5n3zV9zzTtmI3UksdQRVvoxMfooAo" crossorigin="anonymous"></script>
 		<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.0/js/bootstrap.min.js" integrity="sha384-OgVRvuATP1z7JjHLkuOU7Xw704+h835Lr+6QL9UvYjZE3Ipu6Tp75j7Bh/kR0JKI" crossorigin="anonymous"></script>
         <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.0/css/bootstrap.min.css" integrity="sha384-9aIt2nRpC12Uk9gS9baDl411NQApFmC26EwAOH8WgZl5MYYxFfc+NcPb1dKGj7Sk" crossorigin="anonymous">
+		<link rel="stylesheet" type="text/css" href="styles/map.css">
+		<link rel="stylesheet" type="text/css" href="styles/chart.css">
 
 
 	</head>
@@ -37,30 +39,91 @@
 	 <div class="container-fluid">
 
         <div class="row" id="map-features">
-            <div class="col-sm-8" id="map"></div>
 
-            <div class="col-sm-4" id="side-bar">
+			<div class="col-sm-8">
+				<div id="map"></div>
+			</div>
 
-				 <div class="col-sm" id="time-slider">
-					<div class="range range-primary">
-						<input type="range" class="custom-range" min="1980" max="2019" value="2000" step="1" class="slider" id="mySlider">
-						<p>Your slider has a value of <span id="slider-value"></span></p>
-				  </div>
+			<div class="col-sm-4" id="side-bar">
+				<div class="side-bar-container">
+
+					<div class="col-sm pickup-dates-container side-bar-item">
+						<div class="title">
+							<h4>Get data between 2 dates:</h4>
+						</div>
+						<div class="sub-title">From date:</div>
+						<div class="form-group row">
+						  <label class="sub-title" id="start_date" for="from-date-input" class="col-3 col-form-label"></label>
+						  <div class="col-9">
+							<input class="form-control" type="date" value="2000-01-01" id="from-date-input">
+						  </div>
+						</div>
+
+						<div class="sub-title">To date:</div>
+						<div class="form-group row">
+						  <label class="sub-title"id="end_date" for="to-date-input" class="col-3 col-form-label"></label>
+						  <div class="col-9">
+							<input class="form-control" type="date" value="2001-01-08" id="to-date-input">
+						  </div>
+						</div>
+
+						<div class="sub-title">Temporal scale:</div>
+						<div class="dropdown-time-scale">
+							<button id="button-time-scale" type="button" class="btn btn-primary dropdown-toggle" data-toggle="dropdown">Interval selected</button>
+							<div class="dropdown-menu" id="SelectMe">
+								<a class="dropdown-item" href="#">Daily</a>
+								<a class="dropdown-item" href="#">Monthly</a>
+								<a class="dropdown-item" href="#">Interval selected</a>
+							</div>
+						</div>
+
+						<div class="load-data-button">
+							<button class="btn btn-primary btn-sm" type="submit" id="submit-dates">Load !</button>
+						</div>
+					</div>
+
+					<div class="col-sm slider-dates-container side-bar-item">
+						<div class="title">
+							<h4>Visualize the evolution:</h4>
+						</div>
+
+						<div class="col-sm" id="time-slider">
+							<div class="range range-primary">
+								<input type="range" class="custom-range" min="1980" max="2019" value="2000" step="1" class="slider" id="timeSlider">
+								<h3 class="current-date-title"><span id="slider-value"></span></h3>
+
+						  </div>
+
+						</div>
+
+					</div>
+
+				</div>
+			</div>
+
+			<div class="col-sm-8" id="stats">
+				<div id="chart"></div>
+			</div>
+
+			<div class="col-sm-4" id="legend-items">
+
+				<div class="col-sm" id="legend">
+					<div id="legend-content"></div>
 				</div>
 
-			<div class="col-sm" id="legend"></div>
-
-			<div class="col-sm" id="chart"></div>
-
+				<div class="col-sm" id="source">
+					<div>source</div>
+				</div>
 
 			</div>
+
 		</div>
-	 </div>
+
+	 	</div>
 
 
 		<script src="scripts/map.js"></script>
 		<link rel="stylesheet" type="text/css" href="styles/index.css">
-		<link rel="stylesheet" type="text/css" href="styles/map.css">
 
 </body>
 </html>

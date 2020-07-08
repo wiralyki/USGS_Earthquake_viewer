@@ -1,69 +1,91 @@
-.minor {
+.minor circle{
     fill:#d9ef8b;
-    size:6px;
-    opacity:1;
+    /*opacity:1;*/
     stroke: black;
-            z-index: 5;
-
+    r:5;
 }
 
-.light {
+.light circle{
     fill:#fee08b;
-    size: 10px;
-    opacity:1;
+    /*opacity:1;*/
     stroke: black;
-        z-index: 4;
+    r:12;
 }
 
-.moderate {
+.moderate circle{
     fill: #fdae61;
-    size:18px;
-    opacity: 1;
+    /*opacity: 1;*/
     stroke: black;
-        z-index: 3;
+    r:24;
 }
 
-.strong {
+.strong circle{
     fill:#f46d43;
-    size:30px;
-    opacity:1;
+    /*opacity:1;*/
     stroke: black;
-        z-index: 2;
+    r:30;
 }
 
-.major {
+.major circle{
     fill:#d73027;
-    size:46px;
-    opacity:1;
+    /*opacity:1;*/
     stroke: black;
-        z-index: 1;
+    r:40;
 }
 
-.great {
+.great circle{
     fill:#a50026;
-    size:66px;
-    opacity:1;
+    /*opacity:1;*/
     stroke: black;
-    z-index: 0;
+    r:50;
+}
+
+.hidden {
+    opacity:0;
+}
+
+.displayed {
+    opacity:1;
 }
 
 
-g {
-    display:none
+.pulsating {
+    -webkit-animation: pulsate 1s ease-out;
+    -webkit-animation-iteration-count: infinite;
 }
 
-/*circle {*/
-/*  animation: bounce 1s;*/
+@-webkit-keyframes pulsate {
+     0% {
+        opacity: 0;
+     }
+     100% {
+        opacity: 1;
+     }
+}
+
+
+/*g {*/
+/*    display:none*/
 /*}*/
 
-/*@keyframes bounce {*/
-/*  100% {*/
-/*    transform: scale(1);*/
-/*  }*/
-/*  !*50% {*!*/
-/*  !*  transform: scale(0.5);*!*/
-/*  !*}*!*/
-/*  0% {*/
-/*    transform: scale(0.1);*/
-/*  }*/
-/*}*/
+.map_legend {
+    border-radius: 25px;
+    padding: 10px;
+    width: 35%;
+}
+
+.map_legend text {
+    fill: #000000;
+}
+
+.leaflet-tile-container {
+    pointer-events: none;
+}
+
+.popup-feature {
+    z-index: 99999;
+    background-color: ghostwhite;
+    border-radius: 25px;
+    padding: 10px;
+    border: 1px solid #000000;
+}
